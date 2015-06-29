@@ -325,7 +325,7 @@ class PHPCtags
                 'line' => $line,
                 'scope' => $scope,
                 'access' => $access,
-                'type' => $this->getRealClassName($return_type),
+                'type' => $return_type,
             );
         }
 
@@ -411,6 +411,7 @@ class PHPCtags
                 list($type, $name) = each($scope);
                 switch ($type) {
                     case 'class':
+                    case 'interface':
                         // n_* stuffs are namespace related scope variables
                         // current > class > namespace
                         $n_scope = array_pop($struct['scope']);
@@ -490,7 +491,11 @@ class PHPCtags
             #type
             if (  $kind == "f" || $kind == "p"  || $kind == "m"  ) {
                 //$str .= "\t" . "type:" . $struct['type'] ;
-                $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
+                if ( $struct['type']  ) {
+                    $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
+                }else{
+                    $str .= ' nil ' ;
+                }
             }
 
 
