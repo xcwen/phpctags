@@ -308,7 +308,7 @@ class PHPCtags
                 'line' => $line,
                 'scope' => $scope,
                 'access' => $access,
-                'type' => $return_type,
+                'type' => $this->getRealClassName($return_type),
             );
         }
 
@@ -324,7 +324,7 @@ class PHPCtags
 
     private function render()
     {
-        $str = '';
+        $str = "";
         foreach ($this->mStructs as $struct) {
             $file = $struct['file'];
 
@@ -337,19 +337,27 @@ class PHPCtags
             if (empty($struct['name']) || empty($struct['line']) || empty($struct['kind']))
                 return;
 
-
+            $kind= $struct['kind'];
+            
+            $str .= '(';
             if  ($struct['name'] instanceof PHPParser_Node_Expr_Variable ){
-                $str .= $struct['name']->name;
+                $str .= '"'. addslashes( $struct['name']->name) . '" ' ;
             }else{
-                $str .= $struct['name'];
+                $str .= '"'. addslashes( $struct['name']) . '" ' ;
             }
 
-            $str .= "\t" . $file;
+            $str .= ' "'. addslashes($file.":".$struct['line']  )  . '" ' ;
+
 
             if ($this->mOptions['excmd'] == 'number') {
                 $str .= "\t" . $struct['line'];
             } else { //excmd == 'mixed' or 'pattern', default behavior
-                $str .= "\t" . "/^" . rtrim($lines[$struct['line'] - 1], "\n") . "$/";
+                #$str .= "\t" . "/^" . rtrim($lines[$struct['line'] - 1], "\n") . "$/";
+                if ($kind=="f" || $kind=="m"){
+                    $str .= ' "'. addslashes(rtrim($lines[$struct['line'] - 1], "\n")) . '" ' ;
+                }else{
+                    $str .= ' nil ' ;
+                }
             }
 
             if ($this->mOptions['format'] == 1) {
@@ -357,22 +365,25 @@ class PHPCtags
                 continue;
             }
 
-            $str .= ";\"";
+            //$str .= ";\"";
 
             #field=k, kind of tag as single letter
             if (in_array('k', $this->mOptions['fields'])) {
-                in_array('z', $this->mOptions['fields']) && $str .= "kind:";
-                $str .= "\t" . $struct['kind'];
-            } else
+                //in_array('z', $this->mOptions['fields']) && $str .= "kind:";
+                //$str .= "\t" . $struct['kind'];
+
+                $str .= ' "'. addslashes( $kind ) . '" ' ;
+            } else if (in_array('K', $this->mOptions['fields'])) {
             #field=K, kind of tag as fullname
-            if (in_array('K', $this->mOptions['fields'])) {
-                in_array('z', $this->mOptions['fields']) && $str .= "kind:";
-                $str .= "\t" . self::$mKinds[$struct['kind']];
+                //in_array('z', $this->mOptions['fields']) && $str .= "kind:";
+                //$str .= "\t" . self::$mKinds[$struct['kind']];
+                $str .= ' "'. addslashes( self::$mKinds[$kind] ) . '" ' ;
             }
 
             #field=n
             if (in_array('n', $this->mOptions['fields'])) {
-                $str .= "\t" . "line:" . $struct['line'];
+                //$str .= "\t" . "line:" . $struct['line'];
+                ;//$str .= ' "'. addslashes( $struct['line'] ) . '" ' ;
             }
 
 
@@ -388,10 +399,12 @@ class PHPCtags
                         $n_scope = array_pop($struct['scope']);
                         if(!empty($n_scope)) {
                             list($n_type, $n_name) = each($n_scope);
-                            $s_str = 'class:' . $n_name . '\\' . $name;
+                            $s_str =  $n_name . '\\' . $name;
                         } else {
-                            $s_str = 'class:' . $name;
+                            $s_str =   $name;
                         }
+
+                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
                         break;
                     case 'method':
                         // c_* stuffs are class related scope variables
@@ -401,17 +414,26 @@ class PHPCtags
                         $n_scope = array_pop($struct['scope']);
                         if(!empty($n_scope)) {
                             list($n_type, $n_name) = each($n_scope);
-                            $s_str = 'method:' . $n_name . '\\' . $c_name . '::' . $name;
+                            $s_str =  $n_name . '\\' . $c_name . '::' . $name;
                         } else {
-                            $s_str = 'method:' . $c_name . '::' . $name;
+                            $s_str = $c_name . '::' . $name;
+
                         }
+
+                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
                         break;
                     default:
-                        $s_str = $type . ':' . $name;
+                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($name). "\")";
                         break;
                 }
-                $str .= "\t" . $s_str;
+                $str .= $s_str ;
+            }else{
+                //scope
+                if( $kind == "f" || $kind == "d" || $kind == "c" || $kind == "i"  ){
+                    $str .= ' () ' ;
+                }
             }
+
 
             #field=i
             if(in_array('i', $this->mOptions['fields'])) {
@@ -424,28 +446,45 @@ class PHPCtags
                         $inherits[] = $this->getRealClassName( $interface->toString());
                     }
                 }
-                if(!empty($inherits))
-                    $str .= "\t" . 'inherits:' . implode(',', $inherits);
+                if(!empty($inherits)){
+                    //$str .= "\t" . 'inherits:' . implode(',', $inherits);
+                    $str .= ' "'. addslashes( implode(',', $inherits) ) . '" ' ;
+                }else{
+                    //scope
+                    if(  $kind == "c" || $kind == "i"  ){
+                        $str .= ' nil ' ;
+                    }
+                }
+            }else{
+                //scope
+                if(  $kind == "c" || $kind == "i"  ){
+                    $str .= ' nil ' ;
+                }
             }
 
             #field=a
             if (in_array('a', $this->mOptions['fields']) && !empty($struct['access'])) {
-                $str .= "\t" . "access:" . $struct['access'];
+                //$str .= "\t" . "access:" . $struct['access'];
+                $str .= ' "'. addslashes(  $struct['access']  ) . '" ' ;
+            }else{
+
             }
 
             #type
-            if ( !empty($struct['type'])) {
-                $str .= "\t" . "type:" . $struct['type'] ;
+            if (  $kind == "f" || $kind == "p"  || $kind == "m"  ) {
+                //$str .= "\t" . "type:" . $struct['type'] ;
+                $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
             }
 
 
 
-            $str .= "\n";
+            $str .= ")\n";
         }
 
 
+
         // remove the last line ending
-        $str = trim($str);
+    //$str = trim($str);
 
     /*
         // sort the result as instructed
@@ -454,7 +493,6 @@ class PHPCtags
         }
 
     */
-
         return $str;
     }
 

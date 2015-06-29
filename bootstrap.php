@@ -225,16 +225,16 @@ if (isset($options['f']) && $options['f'] !== '-') {
 }
 
 $mode = ($options['sort'] == 'yes' ? 1 : ($options['sort'] == 'foldcase' ? 2 : 0));
-$tagline = <<<EOF
-!_TAG_FILE_FORMAT\t2\t/extended format; --format=1 will not append ;" to lines/
-!_TAG_FILE_SORTED\t{$mode}\t/0=unsorted, 1=sorted, 2=foldcase/
-!_TAG_PROGRAM_AUTHOR\ttechlivezheng\t/techlivezheng@gmail.com/
-!_TAG_PROGRAM_NAME\tphpctags\t//
-!_TAG_PROGRAM_URL\thttps://github.com/techlivezheng/phpctags\t/official site/
-!_TAG_PROGRAM_VERSION\t${version}\t//\n
-EOF;
+// $tagline = <<<EOF
+// !_TAG_FILE_FORMAT\t2\t/extended format; --format=1 will not append ;" to lines/
+// !_TAG_FILE_SORTED\t{$mode}\t/0=unsorted, 1=sorted, 2=foldcase/
+// !_TAG_PROGRAM_AUTHOR\ttechlivezheng\t/techlivezheng@gmail.com/
+// !_TAG_PROGRAM_NAME\tphpctags\t//
+// !_TAG_PROGRAM_URL\thttps://github.com/techlivezheng/phpctags\t/official site/
+// !_TAG_PROGRAM_VERSION\t${version}\t//\n
+// EOF;
 
-$ret=fwrite($tagfile, $tagline.$result);
+$ret=fwrite($tagfile, $result);
 fclose($tagfile);
 
 function yes_or_no($arg) {
