@@ -3,9 +3,10 @@ class PHPCtags
 {
     const VERSION = '0.5.1';
 
-    private $mFile;
+    private /**::XXX */  $mFile;
 
     private $mFiles;
+    private $mFileLines ;
 
     private static $mKinds = array(
         't' => 'trait',
@@ -48,6 +49,7 @@ class PHPCtags
         }
 
         $this->mFile = realpath($file);
+        $this->mFileLines = $this->mFiles[$this->mFile]  ;
     }
 
     public static function getMKinds()
@@ -57,7 +59,8 @@ class PHPCtags
 
     public function addFile($file)
     {
-        $this->mFiles[realpath($file)] = 1;
+        $f=realpath($file);
+        $this->mFiles[$f] = file($f ) ;
     }
 
     public function addFiles($files)
@@ -207,9 +210,17 @@ class PHPCtags
             $line = $prop->getLine();
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type=$this->getRealClassName( $matches[1]);
+            }else{
+                //for old return format 
+                if ( preg_match( "/\\/\\*.*::([a-zA-Z0-9_\\\\|]+)/",
+                                 $this->mFileLines[$line-1] ,
+                                 $matches) ){
+                    $return_type=$this->getRealClassName( $matches[1]);
+                }
             }
 
             $access = $this->getNodeAccess($node);
+
         } elseif ($node instanceof PHPParser_Node_Stmt_ClassConst) {
             $kind = 'd';
             $cons = $node->consts[0];
@@ -345,11 +356,7 @@ class PHPCtags
         foreach ($this->mStructs as $struct) {
             $file = $struct['file'];
 
-            if (!isset($files[$file])){
-                $a = file($file);
-                $files[$file] = file($file);
-            }
-            $lines = $files[$file];
+            $lines = $this->mFiles[$file];
 
             if (empty($struct['name']) || empty($struct['line']) || empty($struct['kind']))
                 return;
@@ -370,7 +377,7 @@ class PHPCtags
                 $str .= "\t" . $struct['line'];
             } else { //excmd == 'mixed' or 'pattern', default behavior
                 #$str .= "\t" . "/^" . rtrim($lines[$struct['line'] - 1], "\n") . "$/";
-                if ($kind=="f" || $kind=="m"){
+                if ($kind=="f" || $kind=="m" || $kind=="p"){
                     $str .= ' "'. addslashes(rtrim($lines[$struct['line'] - 1], "\n")) . '" ' ;
                 }else{
                     $str .= ' nil ' ;
@@ -584,5 +591,6 @@ class PHPCtags
 class PHPCtagsException extends Exception {
     public function __toString() {
         return "PHPCtags: {$this->message}\n";
+
     }
 }
