@@ -377,7 +377,7 @@ class PHPCtags
                 $str .= "\t" . $struct['line'];
             } else { //excmd == 'mixed' or 'pattern', default behavior
                 #$str .= "\t" . "/^" . rtrim($lines[$struct['line'] - 1], "\n") . "$/";
-                if ($kind=="f" || $kind=="m" || $kind=="p"){
+                if ($kind=="f" || $kind=="m" ){
                     $str .= ' "'. addslashes(rtrim($lines[$struct['line'] - 1], "\n")) . '" ' ;
                 }else{
                     $str .= ' nil ' ;
