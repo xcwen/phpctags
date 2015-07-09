@@ -48,7 +48,8 @@ class PHPCtags
             throw new PHPCtagsException('Warning: cannot open source file "' . $file . '" : File is not readable');
         }
 
-        $this->mFile = realpath($file);
+        //$this->mFile = realpath($file);
+        $this->mFile=$file;
         $this->mFileLines = $this->mFiles[$this->mFile]  ;
     }
 
@@ -59,7 +60,8 @@ class PHPCtags
 
     public function addFile($file)
     {
-        $f=realpath($file);
+        //$f=realpath($file);
+        $f=$file;
         $this->mFiles[$f] = file($f ) ;
     }
 
