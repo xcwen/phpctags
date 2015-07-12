@@ -6,12 +6,12 @@ source := README.md \
           PHPCtags.class.php
 
 .PHONY: all
-all: clean phpctags
+all: clean build/phpctags.phar 
+	cp build/phpctags.phar phpctags 
 
 .PHONY: clean
 clean:
 	@echo "Cleaning executables ..."
-	@rm -f ./phpctags
 	@rm -f ./build/phpctags.phar
 	@echo "Done!"
 
@@ -20,7 +20,6 @@ dist-clean:
 	@echo "Cleaning old build files and vendor libraries ..."
 	@rm -rf ./build
 	@rm -rf ./vendor
-	@rm -f  ./phpctags
 	@echo "Done!"
 
 .PHONY: install
@@ -45,8 +44,3 @@ vendor: composer.lock build/composer.phar
 build/phpctags.phar: vendor $(source) | build
 	@php -dphar.readonly=0 buildPHAR.php
 	@chmod +x build/phpctags.phar
-
-phpctags: build/phpctags.phar
-	@echo "Building phpctags ..."
-	@cp build/phpctags.phar phpctags
-	@echo "Done!"
