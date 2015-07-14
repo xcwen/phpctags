@@ -13,6 +13,7 @@ all: clean build/phpctags.phar
 clean:
 	@echo "Cleaning executables ..."
 	@rm -f ./build/phpctags.phar
+	@rm -f ./phpctags
 	@echo "Done!"
 
 .PHONY: dist-clean
