@@ -118,7 +118,7 @@ class PHPCtags
 
     private function getRealClassName($className){
         if (  $className[0] != "\\"  ){
-            $ret_arr=split("\\\\", $className , 2  );
+            $ret_arr=explode("\\\\", $className , 2  );
             if (count($ret_arr)==2){
 
                 $pack_name=$ret_arr[0];
