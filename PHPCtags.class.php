@@ -117,11 +117,14 @@ class PHPCtags
     }
 
     private function getRealClassName($className){
+
+        echo  "do  className  $className\n" ;
         if (  $className[0] != "\\"  ){
-            $ret_arr=explode("\\\\", $className , 2  );
+            $ret_arr=explode("\\", $className , 2  );
             if (count($ret_arr)==2){
 
                 $pack_name=$ret_arr[0];
+                echo  "do  ". $pack_name . "\n " ;
                 if (isset($this->mUseConfig[ $pack_name])){
                     return  $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
                 }else{
