@@ -118,13 +118,11 @@ class PHPCtags
 
     private function getRealClassName($className){
 
-        echo  "do  className  $className\n" ;
         if (  $className[0] != "\\"  ){
             $ret_arr=explode("\\", $className , 2  );
             if (count($ret_arr)==2){
 
                 $pack_name=$ret_arr[0];
-                echo  "do  ". $pack_name . "\n " ;
                 if (isset($this->mUseConfig[ $pack_name])){
                     return  $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
                 }else{
@@ -237,6 +235,12 @@ class PHPCtags
             $cons = $node->consts[0];
             $name = $cons->name;
             $line = $cons->getLine();
+            $access = "public"; 
+            $return_type="void";
+            if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                $return_type=$this->getRealClassName( $matches[1]);
+            }
+
         } elseif ($node instanceof PHPParser_Node_Stmt_ClassMethod) {
             $kind = 'm';
             $name = $node->name;
@@ -259,9 +263,18 @@ class PHPCtags
 
         } elseif ($node instanceof PHPParser_Node_Stmt_Const) {
             $kind = 'd';
+            $access = "public"; 
             $cons = $node->consts[0];
             $name = $cons->name;
             $line = $node->getLine();
+
+            $return_type="void";
+            if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                $return_type=$this->getRealClassName( $matches[1]);
+            }
+
+
+
         } elseif ($node instanceof PHPParser_Node_Stmt_Global) {
             /*
             $kind = 'v';
@@ -328,9 +341,15 @@ class PHPCtags
             switch ($node->name) {
                 case 'define':
                     $kind = 'd';
+                    $access = "public"; 
                     $node = $node->args[0]->value;
                     $name = $node->value;
                     $line = $node->getLine();
+                    $return_type="void";
+                    if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                        $return_type=$this->getRealClassName( $matches[1]);
+                    }
+
                     break;
             }
         } else {
@@ -513,7 +532,7 @@ class PHPCtags
             }
 
             #type
-            if (  $kind == "f" || $kind == "p"  || $kind == "m"  ) {
+            if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  ) {
                 //$str .= "\t" . "type:" . $struct['type'] ;
                 if ( $struct['type']  ) {
                     $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
