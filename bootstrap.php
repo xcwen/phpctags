@@ -34,6 +34,7 @@ $options = getopt('aC:f:Nno:RuV', array(
     'verbose::',
     'version',
     'memory::',
+    'files::',
 ));
 
 $options_info = <<<'EOF'
@@ -94,12 +95,15 @@ foreach ($options as $option => $value) {
     }
   }
 }
+
 while ($key = array_pop($argv_)) unset($argv[$key]);
 
 // option -v is an alternative to --verbose
 if (isset($options['V'])) {
     $options['verbose'] = 'yes';
 }
+
+
 
 if (isset($options['verbose'])) {
     if ($options['verbose'] === FALSE || yes_or_no($options['verbose']) == 'yes') {
@@ -234,11 +238,33 @@ if (isset($options['R']) && empty($argv)) {
 
 try {
 
-    $ctags = new PHPCtags($options);
-    $ctags->addFiles($argv);
-    $ctags->setCacheFile(isset($options['C']) ? $options['C'] : null);
+    if ($options["files"]) {
+        $files_config=json_decode (file_get_contents($options["files"]),true);
 
-    $result = $ctags->export();
+        $ctags = new PHPCtags($options);
+        $i=0;
+        $all_count=count($files_config);
+        foreach($files_config as $item) {
+            $src_file=$item[0];
+            $obj_file=$item[1];
+
+            #printf("%02d%% %s\n",($i/$all_count)*100, $src_file );
+            $ctags->cleanFiles();
+            $ctags->addFiles([$src_file ]);
+            $result = $ctags->export();
+            file_put_contents($obj_file,$result);
+            $i++;
+        }
+
+        #printf("%02d%%\n",100 );
+        exit;
+    }else{
+        $ctags = new PHPCtags($options);
+        $ctags->addFiles($argv );
+        $result = $ctags->export();
+    }
+
+
 } catch (Exception $e) {
     die("phpctags: {$e->getMessage()}".PHP_EOL);
 }

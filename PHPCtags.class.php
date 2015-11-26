@@ -30,7 +30,7 @@ class PHPCtags
 
     public function __construct($options)
     {
-        $this->mParser = new PHPParser_Parser(new PHPParser_Lexer);
+        $this->mParser = new PHPParser_Parser(new  PHPParser_Lexer());
         $this->mLines = array();
         $this->mOptions = $options;
         $this->filecount = 0;
@@ -59,7 +59,10 @@ class PHPCtags
     {
         return self::$mKinds;
     }
-
+    public function cleanFiles(){
+        $this->mFiles=array();
+        $this->mLines=array();
+    }
     public function addFile($file)
     {
         //$f=realpath($file);
@@ -140,6 +143,20 @@ class PHPCtags
             return $className;
         }
 
+    }
+
+    private function  func_get_return_type($node) {
+        $return_type="". $node->returnType;
+
+        if (!$return_type )  {
+            if ( preg_match( "/@return[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                $return_type= $matches[1];
+            }
+        }
+        if ($return_type) {
+            $return_type=$this->getRealClassName(  $return_type);
+        }
+        return $return_type;
     }
     private function struct($node, $reset=FALSE, $parent=array())
     {
@@ -246,12 +263,14 @@ class PHPCtags
             $name = $node->name;
             $line = $node->getLine();
             $access = $this->getNodeAccess($node);
-            if ( preg_match( "/@return[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                $return_type=$this->getRealClassName( $matches[1]);
-            }
+            $return_type=$this->func_get_return_type($node);
+
+
+            /*
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('method' => $name));
             }
+            */
         } elseif ($node instanceof PHPParser_Node_Stmt_If) {
             foreach ($node as $subNode) {
                 $this->struct($subNode);
@@ -287,19 +306,21 @@ class PHPCtags
         } elseif ($node instanceof PHPParser_Node_Stmt_Declare) {
             //@todo
         } elseif ($node instanceof PHPParser_Node_Stmt_TryCatch) {
+            /*
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
+            */
         } elseif ($node instanceof PHPParser_Node_Stmt_Function) {
+            
+
+
             $kind = 'f';
             $name = $node->name;
             $line = $node->getLine();
-            if ( preg_match( "/@return[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                $return_type=$this->getRealClassName( $matches[1]);
-            }
-            foreach ($node as $subNode) {
-                $this->struct($subNode, FALSE, array('function' => $name));
-            }
+
+            $return_type = $this->func_get_return_type($node);
+
         } elseif ($node instanceof PHPParser_Node_Stmt_Interface) {
             $kind = 'i';
             $name = $node->name;
@@ -308,12 +329,15 @@ class PHPCtags
                 $this->struct($subNode, FALSE, array('interface' => $name));
             }
         } elseif ($node instanceof PHPParser_Node_Stmt_Trait ) {
+
+            /*
             $kind = 't';
             $name = $node->name;
             $line = $node->getLine();
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('trait' => $name));
             }
+            */
         } elseif ($node instanceof PHPParser_Node_Stmt_Namespace) {
             $kind = 'n';
             $name = $node->name;
