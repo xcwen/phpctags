@@ -235,6 +235,7 @@ if (isset($options['R']) && empty($argv)) {
     $argv[] = getcwd();
 }
 
+//
 
 try {
 
@@ -248,15 +249,17 @@ try {
             $src_file=$item[0];
             $obj_file=$item[1];
 
-            #printf("%02d%% %s\n",($i/$all_count)*100, $src_file );
+            printf("%02d%% %s\n",($i/$all_count)*100, $src_file );
             $ctags->cleanFiles();
             $ctags->addFiles([$src_file ]);
             $result = $ctags->export();
-            file_put_contents($obj_file,$result);
+            if ($result ) {
+                file_put_contents($obj_file,$result);
+            }
             $i++;
         }
 
-        #printf("%02d%%\n",100 );
+        printf("%02d%%\n",100 );
         exit;
     }else{
         $ctags = new PHPCtags($options);

@@ -613,7 +613,10 @@ class PHPCtags
 
 
         foreach (array_keys($this->mFiles) as $file) {
-            $this->process($file);
+            $ret=$this->process($file);
+            if (!$ret){
+                return $ret;
+            }
         }
 
         $content = $this->full_render();
@@ -661,6 +664,7 @@ class PHPCtags
                     $this->process_single_file($filename);
                 } catch(Exception $e) {
                     echo "PHPParser: {$e->getMessage()} - {$filename}".PHP_EOL;
+                    return false;
                 }
             }
         } else {
@@ -668,8 +672,10 @@ class PHPCtags
                 $this->process_single_file($file);
             } catch(Exception $e) {
                 echo "PHPParser: {$e->getMessage()} - {$file}".PHP_EOL;
+                return false;
             }
         }
+        return true;
     }
 
     private function process_single_file($filename)
@@ -706,7 +712,6 @@ class PHPCtags
 
 }
   
-
 class PHPCtagsException extends Exception {
     public function __toString() {
         return "\nPHPCtags: {$this->message}\n";
