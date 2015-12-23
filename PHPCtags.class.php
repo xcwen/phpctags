@@ -295,12 +295,9 @@ class PHPCtags
 
 
         } elseif ($node instanceof PHPParser_Node_Stmt_Global) {
-            /*
-            $kind = 'v';
-            $prop = $node->vars[0];
-            $name = $prop->name;
-            $line = $node->getLine();
-            */
+
+
+
         } elseif ($node instanceof PHPParser_Node_Stmt_Static) {
             //@todo
         } elseif ($node instanceof PHPParser_Node_Stmt_Declare) {
@@ -328,7 +325,9 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('interface' => $name));
             }
+
         } elseif ($node instanceof PHPParser_Node_Stmt_Trait ) {
+
 
             /*
             $kind = 't';
@@ -345,13 +344,18 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('namespace' => $name));
             }
-            /*
         } elseif ($node instanceof PHPParser_Node_Expr_Assign) {
             if (isset($node->var->name) && is_string($node->var->name)) {
                 $kind = 'v';
                 $node = $node->var;
                 $name = $node->name;
                 $line = $node->getLine();
+
+                $return_type="void";
+                if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                    $return_type=$this->getRealClassName( $matches[1]);
+                }
+
             }
         } elseif ($node instanceof PHPParser_Node_Expr_AssignRef) {
             if (isset($node->var->name) && is_string($node->var->name)) {
@@ -359,8 +363,13 @@ class PHPCtags
                 $node = $node->var;
                 $name = $node->name;
                 $line = $node->getLine();
+                $return_type="void";
+                if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+                    $return_type=$this->getRealClassName( $matches[1]);
+                }
+
             }
-            */
+
         } elseif ($node instanceof PHPParser_Node_Expr_FuncCall) {
             switch ($node->name) {
                 case 'define':
@@ -514,7 +523,7 @@ class PHPCtags
                 $str .= $s_str ;
             }else{
                 //scope
-                if( $kind == "f" || $kind == "d" || $kind == "c" || $kind == "i"  ){
+                if( $kind == "f" || $kind == "d" || $kind == "c" || $kind == "i" || $kind == "v"   ){
                     $str .= ' () ' ;
                 }
             }
@@ -556,7 +565,7 @@ class PHPCtags
             }
 
             #type
-            if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  ) {
+            if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  || $kind == "v"  ) {
                 //$str .= "\t" . "type:" . $struct['type'] ;
                 if ( $struct['type']  ) {
                     $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;

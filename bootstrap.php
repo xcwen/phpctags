@@ -253,7 +253,7 @@ try {
             $ctags->cleanFiles();
             $ctags->addFiles([$src_file ]);
             $result = $ctags->export();
-            if ($result ) {
+            if ($result !== false ) {
                 file_put_contents($obj_file,$result);
             }
             $i++;
