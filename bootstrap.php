@@ -177,7 +177,7 @@ if (!isset($options['fields'])) {
 }
 
 if (!isset($options['kinds'])) {
-    $options['kinds'] = array('c', 'm', 'f', 'p', 'd', 'v', 'i', 't', 'n');
+    $options['kinds'] = array('c', 'm', 'f', 'p', 'd', 'v', 'i', 't', 'n','T');
 } else {
     $options['kinds'] = str_split($options['kinds']);
 }

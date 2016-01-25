@@ -3,7 +3,7 @@ class PHPCtags
 {
     const VERSION = '0.6.0';
 
-    private /**::XXX */  $mFile;
+    private   $mFile;
 
     private $mFiles;
     private $mFileLines ;
@@ -18,6 +18,7 @@ class PHPCtags
         'v' => 'variable',
         'i' => 'interface',
         'n' => 'namespace',
+        'T' => 'usetrait',
     );
 
     private $mParser;
@@ -167,13 +168,14 @@ class PHPCtags
             $structs = array();
         }
 
+
         /*$node::PHPParser_Node_Stmt_Class  */
         
         $kind = $name = $line = $access = $extends = '';
         $return_type="";
         $implements = array();
 
-
+        
 
         if (!empty($parent)) array_push($scope, $parent);
 
@@ -184,11 +186,24 @@ class PHPCtags
         } elseif ($node instanceof PHPParser_Node_Stmt_UseUse ) {
             $this->mUseConfig[$node->alias ]= $node->name->toString() ;
 
+
+        } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse ) {
+
+            
+            $type= implode("\\" , $node->traits[0]->parts) ;
+            $kind = 'T';
+            $name = str_replace("\\","_",$type) ;
+            $line = $node->getLine();
+            $return_type=$this->getRealClassName($type);
+
+            $access = "public" ;
+
+
         } elseif ($node instanceof PHPParser_Node_Stmt_Use ) {
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser_Node_Stmt_Class) {
+        } elseif ($node instanceof PHPParser_Node_Stmt_Class or  $node instanceof PHPParser_Node_Stmt_Trait) {
             $kind = 'c';
             $name = $node->name;
             $extends = $node->extends;
@@ -420,6 +435,7 @@ class PHPCtags
             $file = $struct['file'];
 
             if (!in_array($struct['kind'], $this->mOptions['kinds'])) {
+                print_r( $this->mOptions['kinds']);
                 continue;
             }
 
@@ -430,6 +446,7 @@ class PHPCtags
 
             if (empty($struct['name']) || empty($struct['line']) || empty($struct['kind']))
                 return;
+            echo $struct["name"]. "\n";
 
             $kind= $struct['kind'];
             $str .= '(';
@@ -565,7 +582,7 @@ class PHPCtags
             }
 
             #type
-            if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  || $kind == "v"  ) {
+            if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  || $kind == "v"  || $kind == "T"  ) {
                 //$str .= "\t" . "type:" . $struct['type'] ;
                 if ( $struct['type']  ) {
                     $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
