@@ -169,7 +169,7 @@ class PHPCtags
         }
 
 
-        /*$node::PHPParser_Node_Stmt_Class  */
+
         
         $kind = $name = $line = $access = $extends = '';
         $return_type="";
@@ -209,9 +209,35 @@ class PHPCtags
             $extends = $node->extends;
             $implements = $node->implements;
             $line = $node->getLine();
-
+            
             $filed_scope=$scope;
             array_push($filed_scope, array('class' => $name ) );
+
+            $doc_item= $node->getDocComment() ;
+            $doc_start_line=$doc_item->getLine();
+            $arr=explode("\n", ($doc_item->__toString()));
+            foreach ( $arr as  $line_num  => $line_str ) {
+                if ( preg_match(
+                    "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
+                    $line_str, $matches) ){
+                    $field_name=$matches[2];
+                    $field_return_type= $this->getRealClassName( $matches[1]);
+                    $structs[] = array(
+                        'file' => $this->mFile,
+                        'kind' => "p",
+                        'name' => $field_name,
+                        'extends' => null,
+                        'implements' => null,
+                        'line' =>  $doc_start_line+ $line_num   ,
+                        'scope' => $filed_scope ,
+                        'access' => "public",
+                        'type' => $field_return_type,
+                    );
+
+
+                }
+            }
+
             foreach ($node as $key=> $subNode) {
                 if ($key=="stmts"){
                     foreach ($subNode as $tmpNode) {
@@ -222,7 +248,6 @@ class PHPCtags
                                     "/@var[ \t]+\\$([a-zA-Z0-9_]+)[ \t]+([a-zA-Z0-9_\\\\]+)/",
                                     $comment->getText(), $matches) ){
 
-                                    /**  @var  $proNode PHPParser_Node_Stmt_Property  */
                                     $field_name=$matches[1];
                                     $field_return_type= $this->getRealClassName( $matches[2]);
                                     $structs[] = array(
@@ -446,7 +471,6 @@ class PHPCtags
 
             if (empty($struct['name']) || empty($struct['line']) || empty($struct['kind']))
                 return;
-            echo $struct["name"]. "\n";
 
             $kind= $struct['kind'];
             $str .= '(';

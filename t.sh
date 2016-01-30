@@ -1,0 +1,1 @@
+./phpctags --files=./a.json 
