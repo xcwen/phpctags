@@ -1,15 +1,14 @@
 <?php
 
-
 /**
- * Class UserBasicTest
- *
- * @property Connection              $connection
- * @property UserHandler             userHandler
- *
- * @package triagens\ArangoDb
+ * @method int|null testb($a,$dfa )
+ * @method int testa($a,$dfa )
  */
+
 class UserBasicTest 
 {
+    function ttt($sdf) {
+        echo "asefa" ;
+    }
 
 }

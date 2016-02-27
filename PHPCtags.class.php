@@ -214,26 +214,47 @@ class PHPCtags
             array_push($filed_scope, array('class' => $name ) );
 
             $doc_item= $node->getDocComment() ;
-            $doc_start_line=$doc_item->getLine();
-            $arr=explode("\n", ($doc_item->__toString()));
-            foreach ( $arr as  $line_num  => $line_str ) {
-                if ( preg_match(
-                    "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
-                    $line_str, $matches) ){
-                    $field_name=$matches[2];
-                    $field_return_type= $this->getRealClassName( $matches[1]);
-                    $structs[] = array(
-                        'file' => $this->mFile,
-                        'kind' => "p",
-                        'name' => $field_name,
-                        'extends' => null,
-                        'implements' => null,
-                        'line' =>  $doc_start_line+ $line_num   ,
-                        'scope' => $filed_scope ,
-                        'access' => "public",
-                        'type' => $field_return_type,
-                    );
+            if ($doc_item) {
+                
+                $doc_start_line=$doc_item->getLine();
+                $arr=explode("\n", ($doc_item->__toString()));
+                foreach ( $arr as  $line_num  => $line_str ) {
+                    if ( preg_match(
+                        "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
+                        $line_str, $matches) ){
+                        $field_name=$matches[2];
+                        $field_return_type= $this->getRealClassName( $matches[1]);
+                        $structs[] = array(
+                            'file' => $this->mFile,
+                            'kind' => "p",
+                            'name' => $field_name,
+                            'extends' => null,
+                            'implements' => null,
+                            'line' =>  $doc_start_line+ $line_num   ,
+                            'scope' => $filed_scope ,
+                            'access' => "public",
+                            'type' => $field_return_type,
+                        );
 
+
+                    }else if ( preg_match(
+                        "/@method[ \t]+(.+)[ \t]+([a-zA-Z0-9_]+)/",
+                        $line_str, $matches) ){
+                        //* @method string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
+                        $field_name=$matches[2];
+                        $field_return_type= $this->getRealClassName( $matches[1]);
+                        $structs[] = array(
+                            'file' => $this->mFile,
+                            'kind' => "m",
+                            'name' => $field_name,
+                            'extends' => null,
+                            'implements' => null,
+                            'line' =>  $doc_start_line+ $line_num   ,
+                            'scope' => $filed_scope ,
+                            'access' => "public",
+                            'type' => $field_return_type,
+                        );
+                    }
 
                 }
             }
