@@ -120,7 +120,20 @@ class PHPCtags
         return $a['line'] > $b['line'] ? 1 : 0;
     }
 
-    private function getRealClassName($className){
+    private function getRealClassName($className , $scope =array() ){
+        if ( $className=="\$this" ||  $className == "static"   ) {
+            $c_scope = array_pop($scope);
+            list($c_type, $c_name) = each($c_scope);
+            $n_scope = array_pop($scope);
+            if(!empty($n_scope)) {
+                list($n_type, $n_name) = each($n_scope);
+                $s_str =  $n_name . '\\' . $c_name ;
+            } else {
+                $s_str = $c_name;
+
+            }
+            return $s_str;
+        }
 
         if (  $className[0] != "\\"  ){
             $ret_arr=explode("\\", $className , 2  );
@@ -146,16 +159,16 @@ class PHPCtags
 
     }
 
-    private function  func_get_return_type($node) {
+    private function  func_get_return_type($node,$scope) {
         $return_type="". $node->returnType;
 
         if (!$return_type )  {
-            if ( preg_match( "/@return[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+            if ( preg_match( "/@return[ \t]+([\$a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type= $matches[1];
             }
         }
         if ($return_type) {
-            $return_type=$this->getRealClassName(  $return_type);
+            $return_type=$this->getRealClassName($return_type,$scope);
         }
         return $return_type;
     }
@@ -194,7 +207,7 @@ class PHPCtags
             $kind = 'T';
             $name = str_replace("\\","_",$type) ;
             $line = $node->getLine();
-            $return_type=$this->getRealClassName($type);
+            $return_type=$this->getRealClassName($type,$filed_scope);
 
             $access = "public" ;
 
@@ -223,7 +236,7 @@ class PHPCtags
                         "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
                         $line_str, $matches) ){
                         $field_name=$matches[2];
-                        $field_return_type= $this->getRealClassName( $matches[1]);
+                        $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                         $structs[] = array(
                             'file' => $this->mFile,
                             'kind' => "p",
@@ -238,11 +251,11 @@ class PHPCtags
 
 
                     }else if ( preg_match(
-                        "/@method[ \t]+(.+)[ \t]+([a-zA-Z0-9_]+)/",
+                        "/@method[ \t]+(.+)[ \t]+([\$a-zA-Z0-9_]+)/",
                         $line_str, $matches) ){
                         //* @method string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
                         $field_name=$matches[2];
-                        $field_return_type= $this->getRealClassName( $matches[1]);
+                        $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                         $structs[] = array(
                             'file' => $this->mFile,
                             'kind' => "m",
@@ -254,6 +267,27 @@ class PHPCtags
                             'access' => "public",
                             'type' => $field_return_type,
                         );
+                    }else if ( preg_match(
+                        "/@use[ \t]+([a-zA-Z0-9_\\\\]+)/",
+                        $line_str, $matches) ){
+                        //* @use classtype 
+
+                        $type= $matches[1];
+                        $field_name = str_replace("\\","_",$type) ;
+                        $field_return_type= $this->getRealClassName( $type,$filed_scope);
+
+                        $structs[] = array(
+                            'file' => $this->mFile,
+                            'kind' => "T",
+                            'name' => $field_name,
+                            'extends' => null,
+                            'implements' => null,
+                            'line' =>  $doc_start_line+ $line_num   ,
+                            'scope' => $filed_scope ,
+                            'access' => "public",
+                            'type' => $field_return_type,
+                        );
+
                     }
 
                 }
@@ -270,7 +304,7 @@ class PHPCtags
                                     $comment->getText(), $matches) ){
 
                                     $field_name=$matches[1];
-                                    $field_return_type= $this->getRealClassName( $matches[2]);
+                                    $field_return_type= $this->getRealClassName( $matches[2],$filed_scope);
                                     $structs[] = array(
                                         'file' => $this->mFile,
                                         'kind' => "p",
@@ -296,13 +330,13 @@ class PHPCtags
             $name = $prop->name;
             $line = $prop->getLine();
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                $return_type=$this->getRealClassName( $matches[1]);
+                $return_type=$this->getRealClassName( $matches[1],$scope);
             }else{
                 //for old return format 
                 if ( preg_match( "/\\/\\*.*::([a-zA-Z0-9_\\\\|]+)/",
                                  $this->mFileLines[$line-1] ,
                                  $matches) ){
-                    $return_type=$this->getRealClassName( $matches[1]);
+                    $return_type=$this->getRealClassName( $matches[1],$scope);
                 }
             }
 
@@ -316,7 +350,7 @@ class PHPCtags
             $access = "public"; 
             $return_type="void";
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                $return_type=$this->getRealClassName( $matches[1]);
+                $return_type=$this->getRealClassName( $matches[1],$scope);
             }
 
         } elseif ($node instanceof PHPParser_Node_Stmt_ClassMethod) {
@@ -324,7 +358,7 @@ class PHPCtags
             $name = $node->name;
             $line = $node->getLine();
             $access = $this->getNodeAccess($node);
-            $return_type=$this->func_get_return_type($node);
+            $return_type=$this->func_get_return_type($node, $scope);
 
 
             /*
@@ -350,7 +384,7 @@ class PHPCtags
 
             $return_type="void";
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                $return_type=$this->getRealClassName( $matches[1]);
+                $return_type=$this->getRealClassName( $matches[1],$scope);
             }
 
 
@@ -414,7 +448,7 @@ class PHPCtags
 
                 $return_type="void";
                 if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                    $return_type=$this->getRealClassName( $matches[1]);
+                    $return_type=$this->getRealClassName( $matches[1],$scope);
                 }
 
             }
@@ -426,7 +460,7 @@ class PHPCtags
                 $line = $node->getLine();
                 $return_type="void";
                 if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                    $return_type=$this->getRealClassName( $matches[1]);
+                    $return_type=$this->getRealClassName( $matches[1],$scope);
                 }
 
             }
@@ -441,7 +475,7 @@ class PHPCtags
                     $line = $node->getLine();
                     $return_type="void";
                     if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
-                        $return_type=$this->getRealClassName( $matches[1]);
+                        $return_type=$this->getRealClassName( $matches[1], $scope);
                     }
 
                     break;
@@ -595,7 +629,7 @@ class PHPCtags
             if(in_array('i', $this->mOptions['fields'])) {
                 $inherits = array();
                 if(!empty($struct['extends'])) {
-                    $inherits[] =  $this->getRealClassName( $struct['extends']->toString());
+                    $inherits[] =  $this->getRealClassName( $struct['extends']->toString() );
                 }
                 if(!empty($struct['implements'])) {
                     foreach($struct['implements'] as $interface) {

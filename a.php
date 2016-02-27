@@ -1,14 +1,12 @@
 <?php
+class Testb  {
 
-/**
- * @method int|null testb($a,$dfa )
- * @method int testa($a,$dfa )
- */
-
-class UserBasicTest 
-{
-    function ttt($sdf) {
-        echo "asefa" ;
+    /**
+     * @return $this
+     */
+    public function get_v8(){
+        //$this->v1
     }
+    use Instance;
 
 }
