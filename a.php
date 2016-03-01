@@ -1,6 +1,8 @@
 <?php
-class Testb  {
-
+/**
+ * @see \Illuminate\Routing\Router
+ */
+class Testb  extends Facade {
     /**
      * @return $this
      */

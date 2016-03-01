@@ -267,9 +267,17 @@ class PHPCtags
                             'access' => "public",
                             'type' => $field_return_type,
                         );
-                    }else if ( preg_match(
+                    }else if (
+                        preg_match(
                         "/@use[ \t]+([a-zA-Z0-9_\\\\]+)/",
-                        $line_str, $matches) ){
+                        $line_str, $matches)
+                        or (
+                            $extends->toString() =="Facade" &&
+                            preg_match(
+                        "/@see[ \t]+([a-zA-Z0-9_\\\\]+)/",
+                        $line_str, $matches) )
+
+                    ){
                         //* @use classtype 
 
                         $type= $matches[1];
