@@ -272,7 +272,7 @@ class PHPCtags
                         "/@use[ \t]+([a-zA-Z0-9_\\\\]+)/",
                         $line_str, $matches)
                         or (
-                            $extends->toString() =="Facade" &&
+                            $extends && $extends->toString() =="Facade" &&
                             preg_match(
                         "/@see[ \t]+([a-zA-Z0-9_\\\\]+)/",
                         $line_str, $matches) )
