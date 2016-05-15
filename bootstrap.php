@@ -35,6 +35,7 @@ $options = getopt('aC:f:Nno:RuV', array(
     'version',
     'memory::',
     'files::',
+    'project-root-dir::',
 ));
 
 $options_info = <<<'EOF'
@@ -236,12 +237,13 @@ if (isset($options['R']) && empty($argv)) {
 }
 
 //
-
+require("deal_file.php");
 try {
 
-    if ($options["files"]) {
+    if ($options["project-root-dir"]) {
+        deal_file( $options, "/home/jim/phpctags/" ,"/home/jim/phpctags/ac-php",false );
+        /*
         $files_config=json_decode (file_get_contents($options["files"]),true);
-
         $ctags = new PHPCtags($options);
         $i=0;
         $all_count=count($files_config);
@@ -258,8 +260,10 @@ try {
             }
             $i++;
         }
-
+        */
         printf("%02d%%\n",100 );
+
+
         exit;
     }else{
         $ctags = new PHPCtags($options);

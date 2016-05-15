@@ -120,7 +120,8 @@ class PHPCtags
         return $a['line'] > $b['line'] ? 1 : 0;
     }
 
-    private function getRealClassName($className , $scope =array() ){
+    private function getRealClassName_ex($className , $scope =array() ){
+
         if ( $className=="\$this" ||  $className == "static"   ) {
             $c_scope = array_pop($scope);
             list($c_type, $c_name) = each($c_scope);
@@ -157,6 +158,20 @@ class PHPCtags
             return $className;
         }
 
+    }
+
+    /**
+     *@return  array
+     */
+    private function getRealClassName($className , $scope =array() ){
+        
+        $classname_list=explode("/",$className);
+        
+        $ret_list=[];
+        foreach ( $classname_list as  $item) {
+            $ret_list[]= $this->getRealClassName_ex($item, $scope) ;
+        }
+        return $ret_list;
     }
 
     private function  func_get_return_type($node,$scope) {
@@ -511,7 +526,9 @@ class PHPCtags
     private function render($structure)
     {
         $str = '';
+        $ret_arr=[];
         foreach ($structure as $struct) {
+            $ret_item=[];
             $file = $struct['file'];
 
             if (!in_array($struct['kind'], $this->mOptions['kinds'])) {
@@ -528,24 +545,30 @@ class PHPCtags
                 return;
 
             $kind= $struct['kind'];
-            $str .= '(';
+            //$str .= '(';
             if  ($struct['name'] instanceof PHPParser_Node_Expr_Variable ){
-                $str .= '"'. addslashes( $struct['name']->name) . '" ' ;
+                //$str .= '"'. addslashes( $struct['name']->name) . '" ' ;
+                $ret_item[]=  $struct['name']->name;
             }else{
-                $str .= '"'. addslashes( $struct['name']) . '" ' ;
+                //$str .= '"'. addslashes( $struct['name']) . '" ' ;
+                $ret_item[]=  $struct['name'];
             }
 
-            $str .= ' "'. addslashes($file.":".$struct['line']  )  . '" ' ;
+            $ret_item[]=  $file.":".$struct['line'] ;
+            //$str .= ' "'. addslashes($file.":".$struct['line']  )  . '" ' ;
 
 
             if ($this->mOptions['excmd'] == 'number') {
-                $str .= "\t" . $struct['line'];
+                // $str .= "\t" . $struct['line'];
             } else { //excmd == 'mixed' or 'pattern', default behavior
                 #$str .= "\t" . "/^" . rtrim($lines[$struct['line'] - 1], "\n") . "$/";
                 if ($kind=="f" || $kind=="m" ){
-                    $str .= ' "'. addslashes(rtrim($lines[$struct['line'] - 1], "\n")) . '" ' ;
+                    //$str .= ' "'. addslashes(rtrim($lines[$struct['line'] - 1], "\n")) . '" ' ;
+                    
+                    $ret_item[]= preg_replace(  "/[ \t]*,[ \t]*/", ", " ,trim(preg_replace(  "/.*\\((.*)\\).*/","\\1" , $lines[$struct['line'] - 1])));
                 }else{
-                    $str .= ' nil ' ;
+                    //$str .= ' nil ' ;
+                    $ret_item[]= false;
                 }
             }
 
@@ -561,12 +584,13 @@ class PHPCtags
                 //in_array('z', $this->mOptions['fields']) && $str .= "kind:";
                 //$str .= "\t" . $struct['kind'];
 
-                $str .= ' "'. addslashes( $kind ) . '" ' ;
+                //$str .= ' "'. addslashes( $kind ) . '" ' ;
+                $ret_item[]= $kind ;
             } else if (in_array('K', $this->mOptions['fields'])) {
             #field=K, kind of tag as fullname
                 //in_array('z', $this->mOptions['fields']) && $str .= "kind:";
                 //$str .= "\t" . self::$mKinds[$struct['kind']];
-                $str .= ' "'. addslashes( self::$mKinds[$kind] ) . '" ' ;
+                //$str .= ' "'. addslashes( self::$mKinds[$kind] ) . '" ' ;
             }
 
             #field=n
@@ -594,7 +618,8 @@ class PHPCtags
                             $s_str =   $name;
                         }
 
-                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
+                        //$s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
+                        $ret_item[]=["$type" =>  $s_str ];
                         break;
                     case 'method':
                         // c_* stuffs are class related scope variables
@@ -610,17 +635,22 @@ class PHPCtags
 
                         }
 
-                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
+                        //$s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($s_str). "\")";
+
+                        $ret_item[]=["$type" =>  $s_str ];
                         break;
                     default:
-                        $s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($name). "\")";
+                        //$s_str = "(\"" .  addslashes($type) .  "\".\"".    addslashes($name). "\")";
+                        $ret_item[]=["$type" =>  $name];
                         break;
                 }
                 $str .= $s_str ;
             }else{
                 //scope
                 if( $kind == "f" || $kind == "d" || $kind == "c" || $kind == "i" || $kind == "v"   ){
-                    $str .= ' () ' ;
+
+                    $ret_item[]=[];
+                    //$str .= ' () ' ;
                 }
             }
 
@@ -638,24 +668,28 @@ class PHPCtags
                 }
                 if(!empty($inherits)){
                     //$str .= "\t" . 'inherits:' . implode(',', $inherits);
-                    $str .= ' "'. addslashes( implode(',', $inherits) ) . '" ' ;
+                    //$str .= ' "'. addslashes( implode(',', $inherits) ) . '" ' ;
+                    $ret_item[]= implode(',', $inherits);
                 }else{
                     //scope
                     if(  $kind == "c" || $kind == "i"  ){
-                        $str .= ' nil ' ;
+                        //$str .= ' nil ' ;
+                        $ret_item[]=  false; 
                     }
                 }
             }else{
                 //scope
                 if(  $kind == "c" || $kind == "i"  ){
-                    $str .= ' nil ' ;
+                    //$str .= ' nil ' ;
+                    $ret_item[]=  false; 
                 }
             }
 
             #field=a
             if (in_array('a', $this->mOptions['fields']) && !empty($struct['access'])) {
                 //$str .= "\t" . "access:" . $struct['access'];
-                $str .= ' "'. addslashes(  $struct['access']  ) . '" ' ;
+                $ret_item[]=  $struct['access']  ; 
+                //$str .= ' "'. addslashes(  $struct['access']  ) . '" ' ;
             }else{
 
             }
@@ -664,20 +698,64 @@ class PHPCtags
             if (  $kind == "f" || $kind == "p"  || $kind == "m"  || $kind == "d"  || $kind == "v"  || $kind == "T"  ) {
                 //$str .= "\t" . "type:" . $struct['type'] ;
                 if ( $struct['type']  ) {
-                    $str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
+                    //$str .= ' "'. addslashes(  $struct['type']  ) . '" ' ;
+                    $ret_item[]=  $struct['type']  ; 
                 }else{
                     $str .= ' nil ' ;
+                    $ret_item[]= [] ; 
                 }
+
             }
 
-
-
-            $str .= ")\n";
+            $ret_arr[]=$ret_item;
+            //$str .= ")\n";
         }
 
-        $str = str_replace("\x0D", "", $str);
+        //$str = str_replace("\x0D", "", $str);
 
-        return $str;
+        return json_encode ( $ret_arr, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT  );
+    }
+
+    private function gen_tags_list($ret_arr) {
+        $function_list=[];
+        $class_list=[];
+        $inherit_list=[];
+        foreach ($ret_arr  as $item ) {
+            $tag_name = $item[0];
+            $type     = $item[3];
+            $doc      = $item[2]; 
+
+            if ($type=="f") {
+
+                $return_type=$item[5];
+                $scope=$item[4];
+                if (@$scope["namespace"]) {
+                    $tag_name= @$scope["namespace"]."\\$tag_name";
+                }
+
+                $function_list[]=[ $tag_name, "$tag_name(",  $doc, $return_type  ];
+            }else if  ($type=="v") {
+                $return_type=$item[5];
+                $function_list[]=[ $tag_name, "$tag_name(",  $doc, $return_type  ];
+            }else if  ($type=="d") {
+                $return_type=$item[5];
+                $scope=$item[4];
+                if ( @scope["class"] ) {
+                    
+                }else  {
+                    if (@$scope["namespace"]) {
+                        $tag_name= @$scope["namespace"]."\\$tag_name";
+                    }
+                    $function_list[]=[ $tag_name, "$tag_name(",  $doc, $return_type  ];
+                }
+            }else if  ($type=="v") {
+            }else if  ($type=="v") {
+            }else if  ($type=="v") {
+            }else if  ($type=="v") {
+            }
+           
+            
+        }
     }
 
     private function full_render() {
