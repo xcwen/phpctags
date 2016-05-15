@@ -1,1 +1,1 @@
-./phpctags --files=./a.json 
+php ./bootstrap.php --files=./a.json 

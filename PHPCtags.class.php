@@ -218,13 +218,23 @@ class PHPCtags
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse ) {
 
             
-            $type= implode("\\" , $node->traits[0]->parts) ;
-            $kind = 'T';
-            $name = str_replace("\\","_",$type) ;
-            $line = $node->getLine();
-            $return_type=$this->getRealClassName($type,$filed_scope);
-
-            $access = "public" ;
+            foreach ($node ->traits  as $trait ) {
+                $type= implode("\\" , $trait->parts) ;
+                $name = str_replace("\\","_",$type) ;
+                $line = $node->getLine();
+                $return_type=$this->getRealClassName($type,$scope);
+                $structs[] = array(
+                    'file' => $this->mFile,
+                    'kind' => "T",
+                    'name' => $name,
+                    'extends' => null,
+                    'implements' => null,
+                    'line' =>  $line ,
+                    'scope' => $scope ,
+                    'access' => "public",
+                    'type' => $return_type,
+                );
+            }
 
 
         } elseif ($node instanceof PHPParser_Node_Stmt_Use ) {
@@ -266,10 +276,11 @@ class PHPCtags
 
 
                     }else if ( preg_match(
-                        "/@method[ \t]+(.+)[ \t]+([\$a-zA-Z0-9_]+)/",
+                        "/@method[ \t]+([^\\(]+)[ \t]+([a-zA-Z0-9_]+)\\(/",
                         $line_str, $matches) ){
                         //* @method string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
                         $field_name=$matches[2];
+                        //print_r($matches);
                         $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                         $structs[] = array(
                             'file' => $this->mFile,
@@ -282,9 +293,17 @@ class PHPCtags
                             'access' => "public",
                             'type' => $field_return_type,
                         );
-                    }else if ( preg_match(
+                    }else if (
+                        preg_match(
                         "/@use[ \t]+([a-zA-Z0-9_\\\\]+)/",
-                        $line_str, $matches) ){
+                        $line_str, $matches)
+                        or (
+                            $extends && $extends->toString() =="Facade" &&
+                            preg_match(
+                        "/@see[ \t]+([a-zA-Z0-9_\\\\]+)/",
+                        $line_str, $matches) )
+
+                    ){
                         //* @use classtype 
 
                         $type= $matches[1];
