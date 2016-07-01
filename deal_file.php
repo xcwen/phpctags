@@ -186,12 +186,10 @@ function deal_file( $options,$project_root_dir, $save_tags_dir , $do_all_flag ){
     //check do cache1, or  cache2 
 
     file_put_contents($last_files_config_name , json_encode ( $last_files, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT  ) );
-    
 
+    //处理类数据 
     
     
-
-
     
     
 

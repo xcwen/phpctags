@@ -1,1 +1,1 @@
-php ./bootstrap.php --project-root-dir="./"
+./phpctags --project-root-dir="./"
