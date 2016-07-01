@@ -63,6 +63,7 @@ class PHPCtags
     public function cleanFiles(){
         $this->mFiles=array();
         $this->mLines=array();
+        $this->mUseConfig=array();
     }
     public function addFile($file)
     {
