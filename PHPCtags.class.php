@@ -431,7 +431,7 @@ class PHPCtags
             $name = $node->name;
             $line = $node->getLine();
 
-            $return_type = $this->func_get_return_type($node);
+            $return_type = $this->func_get_return_type($node,$scope);
 
         } elseif ($node instanceof PHPParser_Node_Stmt_Interface) {
             $kind = 'i';
