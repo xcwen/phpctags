@@ -1,1 +1,1 @@
-php ./bootstrap.php --files=./a.json 
+php ./bootstrap.php --files=./a.json

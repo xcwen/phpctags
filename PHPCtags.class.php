@@ -153,7 +153,7 @@ class PHPCtags
                     return $className;
                 }
             }
-    
+
         }else{
             return $className;
         }
@@ -184,12 +184,12 @@ class PHPCtags
 
 
 
-        
+
         $kind = $name = $line = $access = $extends = '';
         $return_type="";
         $implements = array();
 
-        
+
 
         if (!empty($parent)) array_push($scope, $parent);
 
@@ -203,7 +203,7 @@ class PHPCtags
 
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse ) {
 
-            
+
             foreach ($node ->traits  as $trait ) {
                 $type= implode("\\" , $trait->parts) ;
                 $name = str_replace("\\","_",$type) ;
@@ -233,13 +233,13 @@ class PHPCtags
             $extends = $node->extends;
             $implements = $node->implements;
             $line = $node->getLine();
-            
+
             $filed_scope=$scope;
             array_push($filed_scope, array('class' => $name ) );
 
             $doc_item= $node->getDocComment() ;
             if ($doc_item) {
-                
+
                 $doc_start_line=$doc_item->getLine();
                 $arr=explode("\n", ($doc_item->__toString()));
                 foreach ( $arr as  $line_num  => $line_str ) {
@@ -290,7 +290,7 @@ class PHPCtags
                         $line_str, $matches) )
 
                     ){
-                        //* @use classtype 
+                        //* @use classtype
 
                         $type= $matches[1];
                         $field_name = str_replace("\\","_",$type) ;
@@ -320,11 +320,11 @@ class PHPCtags
                         if (is_array($comments)){
                             foreach( $comments  as $comment ){
                                 if ( preg_match(
-                                    "/@var[ \t]+\\$([a-zA-Z0-9_]+)[ \t]+([a-zA-Z0-9_\\\\]+)/",
+                                    "/@var[ \t]+([a-zA-Z0-9_]+)[ \t]+\\$([a-zA-Z0-9_\\\\]+)/",
                                     $comment->getText(), $matches) ){
 
-                                    $field_name=$matches[1];
-                                    $field_return_type= $this->getRealClassName( $matches[2],$filed_scope);
+                                    $field_name=$matches[2];
+                                    $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                                     $structs[] = array(
                                         'file' => $this->mFile,
                                         'kind' => "p",
@@ -346,28 +346,29 @@ class PHPCtags
             }
         } elseif ($node instanceof PHPParser_Node_Stmt_Property) {
             $kind = 'p';
+
             $prop = $node->props[0];
             $name = $prop->name;
             $line = $prop->getLine();
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type=$this->getRealClassName( $matches[1],$scope);
             }else{
-                //for old return format 
+                //for old return format
                 if ( preg_match( "/\\/\\*.*::([a-zA-Z0-9_\\\\|]+)/",
                                  $this->mFileLines[$line-1] ,
                                  $matches) ){
                     $return_type=$this->getRealClassName( $matches[1],$scope);
                 }
             }
-
             $access = $this->getNodeAccess($node);
+
 
         } elseif ($node instanceof PHPParser_Node_Stmt_ClassConst) {
             $kind = 'd';
             $cons = $node->consts[0];
             $name = $cons->name;
             $line = $cons->getLine();
-            $access = "public"; 
+            $access = "public";
             $return_type="void";
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type=$this->getRealClassName( $matches[1],$scope);
@@ -397,7 +398,7 @@ class PHPCtags
 
         } elseif ($node instanceof PHPParser_Node_Stmt_Const) {
             $kind = 'd';
-            $access = "public"; 
+            $access = "public";
             $cons = $node->consts[0];
             $name = $cons->name;
             $line = $node->getLine();
@@ -424,7 +425,7 @@ class PHPCtags
             }
             */
         } elseif ($node instanceof PHPParser_Node_Stmt_Function) {
-            
+
 
 
             $kind = 'f';
@@ -489,7 +490,7 @@ class PHPCtags
             switch ($node->name) {
                 case 'define':
                     $kind = 'd';
-                    $access = "public"; 
+                    $access = "public";
                     $node = $node->args[0]->value;
                     $name = $node->value;
                     $line = $node->getLine();
@@ -836,7 +837,7 @@ class PHPCtags
     }
 
 }
-  
+
 class PHPCtagsException extends Exception {
     public function __toString() {
         return "\nPHPCtags: {$this->message}\n";
