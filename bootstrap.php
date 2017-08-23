@@ -269,7 +269,6 @@ try {
 
 
 } catch (Exception $e) {
-    die("phpctags: {$e->getMessage()}".PHP_EOL);
 }
 // write to a specified file
 if (isset($options['f']) && $options['f'] !== '-') {
