@@ -757,14 +757,16 @@ class PHPCtags
     private function process($file)
     {
         // Load the tag md5 data to skip unchanged files.
+        /*
         if (!isset($this->tagdata) && isset($this->cachefile) && file_exists(realpath($this->cachefile))) {
             if ($this->mOptions['V']) {
                 echo "Loaded cache file.".PHP_EOL;
             }
             $this->tagdata = unserialize(file_get_contents(realpath($this->cachefile)));
         }
+        */
 
-        if (is_dir($file) && isset($this->mOptions['R'])) {
+        if ( is_dir($file) && isset($this->mOptions['R'])) {
             $iterator = new RecursiveIteratorIterator(
                 new ReadableRecursiveDirectoryIterator(
                     $file,
@@ -812,6 +814,7 @@ class PHPCtags
 
         $this->setMFile((string) $filename);
         $file = file_get_contents($this->mFile);
+        /*
         $md5 = md5($file);
         if (isset($this->tagdata[$this->mFile][$md5])) {
             // The file is the same as the previous time we analyzed and saved.
@@ -821,12 +824,15 @@ class PHPCtags
             }
             return;
         }
+        */
 
         $struct = $this->struct($this->mParser->parse($file), TRUE);
         $finishfile = microtime(true);
         $this->mLines[$this->mFile] = $this->render($struct);
         $finishmerge = microtime(true);
+        /*
         $this->tagdata[$this->mFile][$md5] = $this->mLines[$this->mFile];
+        */
         if ( isset($this->mOptions['debug']) && $this->mOptions['debug']) {
             echo "Parse: ".($finishfile - $startfile).", Merge: ".($finishmerge-$finishfile)."; (".$this->filecount.")".$this->mFile.PHP_EOL;
         } else if ($this->mOptions['V']) {
