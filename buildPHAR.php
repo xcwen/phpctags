@@ -56,8 +56,13 @@ $phar->buildFromIterator(
                     "vendor/phpunit",
                     "vendor/sebastian",
                     "vendor/symfony",
+                    "vendor/google/protobuf/[^p]*",
+                    "vendor/google/protobuf/proto*",
+                    "vendor/google/protobuf/post*",
+                    "vendor/google/protobuf/python",
+                    "vendor/google/protobuf/php/[^s]*",
                     'README.md',
-                    './.tags',
+                    '.tags',
                     "ChangeLog.md", 
                 );
 

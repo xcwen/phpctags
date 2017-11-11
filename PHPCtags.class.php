@@ -32,28 +32,14 @@ class PHPCtags
     public function __construct($options)
     {
         $this->mParser =  new \PhpParser\Parser\Php7(new \PhpParser\Lexer\Emulative);
-        $this->mLines = array();
         $this->mOptions = $options;
         $this->filecount = 0;
     }
 
     public function setMFile($file)
     {
-        if (empty($file)) {
-            throw new PHPCtagsException('No File specified.');
-        }
-
-        if (!file_exists($file)) {
-            throw new PHPCtagsException('Warning: cannot open source file "' . $file . '" : No such file');
-        }
-
-        if (!is_readable($file)) {
-            throw new PHPCtagsException('Warning: cannot open source file "' . $file . '" : File is not readable');
-        }
-
-        //$this->mFile = realpath($file);
         $this->mFile=$file;
-        $this->mFileLines = $this->mFiles[$this->mFile]  ;
+        //$this->mFileLines = file($file ) ;
     }
 
     public static function getMKinds()
@@ -61,27 +47,14 @@ class PHPCtags
         return self::$mKinds;
     }
     public function cleanFiles(){
-        $this->mFiles=array();
         $this->mLines=array();
         $this->mUseConfig=array();
-    }
-    public function addFile($file)
-    {
-        //$f=realpath($file);
-        $f=$file;
-        $this->mFiles[$f] = file($f ) ;
     }
 
     public function setCacheFile($file) {
         $this->cachefile = $file;
     }
 
-    public function addFiles($files)
-    {
-        foreach ($files as $file) {
-            $this->addFile($file);
-        }
-    }
 
     private function getNodeAccess($node)
     {
@@ -121,34 +94,38 @@ class PHPCtags
         return $a['line'] > $b['line'] ? 1 : 0;
     }
 
-    private function getRealClassName($className , $scope =array() ){
-        if ( $className=="\$this" ||  $className == "static"   ) {
-            $c_scope = array_pop($scope);
-            list($c_type, $c_name) = each($c_scope);
-            $n_scope = array_pop($scope);
-            if(!empty($n_scope)) {
-                list($n_type, $n_name) = each($n_scope);
-                $s_str =  $n_name . '\\' . $c_name ;
-            } else {
-                $s_str = $c_name;
 
+    private function get_key_in_scope( $scope, $key ) {
+        foreach ( $scope as $item) {
+            $value= @$item[$key];
+            if ($value) {return $value ;}
+        }
+        return false;
+    }
+
+    private function getRealClassName($className ,$scope  ){
+        if ( $className=="\$this" ||  $className == "static"   ) {
+            $namespace= $this-> get_key_in_scope( $scope, "namespace" );
+            $className=  $this-> get_key_in_scope( $scope, "class" );
+            if ( $namespace  ) {
+                return  "\\$namespace\\$className";
+            }else{
+                return  "\\$className";
             }
-            return $s_str;
         }
 
         if (  $className[0] != "\\"  ){
             $ret_arr=explode("\\", $className , 2  );
             if (count($ret_arr)==2){
-
                 $pack_name=$ret_arr[0];
                 if (isset($this->mUseConfig[ $pack_name])){
-                    return  $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
+                     return $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
                 }else{
                     return $className;
                 }
             }else{
                 if (isset($this->mUseConfig[$className])){
-                    return  $this->mUseConfig[$className];
+                    return $this->mUseConfig[$className];
                 }else{
                     return $className;
                 }
@@ -173,6 +150,38 @@ class PHPCtags
         }
         return $return_type;
     }
+    private function gen_args_default_str( $node )  {
+
+        if ( $node instanceof \PhpParser\Node\Scalar\LNumber ) {
+            return strval($node->value);
+        }else if ( $node instanceof \PhpParser\Node\Scalar\String_ ){
+            return "'".$node->value."'";
+        }else if ( $node instanceof \PhpParser\Node\Expr\ConstFetch ){
+            return strval($node->name);
+        }else if ( $node instanceof \PhpParser\Node\Expr\UnaryMinus  ){
+            return "" ;
+        }else if ( $node instanceof \PhpParser\Node\Expr\BinaryOp\BitwiseOr ){
+            return "" ;
+        }else{
+            return @strval($node->value);
+        }
+
+    }
+
+    private function get_args( $node ) {
+
+        $args_list=[];
+        foreach ( $node->getParams() as $param ) {
+            if ($param->default ) {
+                $def_str=$this->gen_args_default_str( $param->default );
+                $args_list[]="\$".$param->name."=$def_str";
+            }else{
+                $args_list[]="\$".$param->name;
+            }
+        }
+        return join(", " ,$args_list  );
+    }
+
     private function struct($node, $reset=FALSE, $parent=array())
     {
         static $scope = array();
@@ -188,6 +197,7 @@ class PHPCtags
         $kind = $name = $line = $access = $extends = '';
         $return_type="";
         $implements = array();
+        $args="";
 
 
         if (!empty($parent)) array_push($scope, $parent);
@@ -205,17 +215,17 @@ class PHPCtags
 
             foreach ($node ->traits  as $trait ) {
                 $type= implode("\\" , $trait->parts) ;
+
                 $name = str_replace("\\","_",$type) ;
                 $line = $node->getLine();
+
                 $return_type=$this->getRealClassName($type,$scope);
                 $structs[] = array(
-                    'file' => $this->mFile,
+                    //'file' => $this->mFile,
                     'kind' => "T",
-                    'name' => $name,
-                    'extends' => null,
-                    'implements' => null,
+                    'name' =>  $name,
                     'line' =>  $line ,
-                    'scope' => $scope ,
+                    'scope' =>  $this->get_scope( $scope) ,
                     'access' => "public",
                     'type' => $return_type,
                 );
@@ -229,12 +239,13 @@ class PHPCtags
         } elseif ($node instanceof PHPParser\Node\Stmt\Class_ or  $node instanceof PHPParser\Node\Stmt\Trait_) {
             $kind = 'c';
             $name = $node->name;
-            $extends = $node->extends;
-            $implements = $node->implements;
+            $extends = @$node->extends;
+            $implements = @$node->implements;
             $line = $node->getLine();
 
             $filed_scope=$scope;
             array_push($filed_scope, array('class' => $name ) );
+
 
             $doc_item= $node->getDocComment() ;
             if ($doc_item) {
@@ -248,35 +259,32 @@ class PHPCtags
                         $field_name=$matches[2];
                         $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                         $structs[] = array(
-                            'file' => $this->mFile,
+                            //'file' => $this->mFile,
                             'kind' => "p",
                             'name' => $field_name,
-                            'extends' => null,
-                            'implements' => null,
                             'line' =>  $doc_start_line+ $line_num   ,
-                            'scope' => $filed_scope ,
+                            'scope' => $this->get_scope( $filed_scope ) ,
                             'access' => "public",
                             'type' => $field_return_type,
                         );
 
 
                     }else if ( preg_match(
-                        "/@method[ \t]+([^\\(]+)[ \t]+([a-zA-Z0-9_]+)\\(/",
+                        "/@method[ \t]+([^\\(]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\\((.*)\\)/",
                         $line_str, $matches) ){
                         //* @method string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
                         $field_name=$matches[2];
-                        //print_r($matches);
+                        $args =$matches[3];
                         $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                         $structs[] = array(
-                            'file' => $this->mFile,
+                            //'file' => $this->mFile,
                             'kind' => "m",
                             'name' => $field_name,
-                            'extends' => null,
-                            'implements' => null,
                             'line' =>  $doc_start_line+ $line_num   ,
-                            'scope' => $filed_scope ,
+                            'scope' => $this->get_scope( $filed_scope ) ,
                             'access' => "public",
                             'type' => $field_return_type,
+                            "args" =>  $args,
                         );
                     }else if (
                         preg_match(
@@ -296,13 +304,11 @@ class PHPCtags
                         $field_return_type= $this->getRealClassName( $type,$filed_scope);
 
                         $structs[] = array(
-                            'file' => $this->mFile,
+                            //'file' => $this->mFile,
                             'kind' => "T",
                             'name' => $field_name,
-                            'extends' => null,
-                            'implements' => null,
                             'line' =>  $doc_start_line+ $line_num   ,
-                            'scope' => $filed_scope ,
+                            'scope' => $this->get_scope( $filed_scope ) ,
                             'access' => "public",
                             'type' => $field_return_type,
                         );
@@ -325,13 +331,11 @@ class PHPCtags
                                     $field_name=$matches[2];
                                     $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
                                     $structs[] = array(
-                                        'file' => $this->mFile,
+                                        // 'file' => $this->mFile,
                                         'kind' => "p",
                                         'name' => $field_name,
-                                        'extends' => null,
-                                        'implements' => null,
                                         'line' => $comment->getLine() ,
-                                        'scope' => $filed_scope ,
+                                        'scope' => $this->get_scope( $filed_scope ) ,
                                         'access' => "public",
                                         'type' => $field_return_type,
                                     );
@@ -351,14 +355,8 @@ class PHPCtags
             $line = $prop->getLine();
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type=$this->getRealClassName( $matches[1],$scope);
-            }else{
-                //for old return format
-                if ( preg_match( "/\\/\\*.*::([a-zA-Z0-9_\\\\|]+)/",
-                                 $this->mFileLines[$line-1] ,
-                                 $matches) ){
-                    $return_type=$this->getRealClassName( $matches[1],$scope);
-                }
             }
+
             $access = $this->getNodeAccess($node);
 
 
@@ -372,13 +370,18 @@ class PHPCtags
             if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                 $return_type=$this->getRealClassName( $matches[1],$scope);
             }
+            $args="class";
 
         } elseif ($node instanceof PHPParser\Node\Stmt\ClassMethod) {
             $kind = 'm';
             $name = $node->name;
             $line = $node->getLine();
+
             $access = $this->getNodeAccess($node);
             $return_type=$this->func_get_return_type($node, $scope);
+
+            //$ret_item[]= preg_replace(  "/[ \t]*,[ \t]*/", ", " ,trim(preg_replace(  "/.*\\((.*)\\).*/","\\1" , $lines[$struct['line'] - 1])))
+            $args=$this->get_args ( $node );
 
 
             /*
@@ -407,6 +410,7 @@ class PHPCtags
                 $return_type=$this->getRealClassName( $matches[1],$scope);
             }
 
+            $args="namespace";
 
 
         } elseif ($node instanceof PHPParser\Node\Stmt\Global_) {
@@ -433,6 +437,10 @@ class PHPCtags
 
             $return_type = $this->func_get_return_type($node,$scope);
 
+            $args=$this->get_args ( $node );
+
+
+
         } elseif ($node instanceof PHPParser\Node\Stmt\Interface_) {
             $kind = 'i';
             $name = $node->name;
@@ -444,18 +452,19 @@ class PHPCtags
         } elseif ($node instanceof PHPParser\Node\Stmt\Trait_ ) {
 
 
-            /*
             $kind = 't';
             $name = $node->name;
             $line = $node->getLine();
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('trait' => $name));
             }
-            */
+
         } elseif ($node instanceof PHPParser\Node\Stmt\Namespace_) {
+            /*
             $kind = 'n';
-            $name = $node->name;
             $line = $node->getLine();
+            */
+            $name = $node->name;
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('namespace' => $name));
             }
@@ -497,6 +506,7 @@ class PHPCtags
                     if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
                         $return_type=$this->getRealClassName( $matches[1], $scope);
                     }
+                    $args="namespace";
 
                     break;
             }
@@ -504,26 +514,33 @@ class PHPCtags
             // we don't care the rest of them.
         }
 
-        if (!empty($kind) && !empty($name) && !empty($line)) {
-            $structs[] = array(
-                'file' => $this->mFile,
+        if (!empty($kind) && $kind !="n" && !empty($name) && !empty($line)) {
+
+            $item=array(
+                //'file' => $this->mFile,
+                'line' => $line,
                 'kind' => $kind,
                 'name' => $name,
-                'extends' => $extends,
-                'implements' => $implements,
-                'line' => $line,
-                'scope' => $scope,
-                'access' => $access,
-                'type' => $return_type,
+                "scope" => $this->get_scope( $scope),
             );
+            if ( $access ) {
+                $item["access"]= $access;
+            }
+            if ($return_type) {
+                $item["type"]= $return_type;
+            }
+            $inherits= $this->get_inherits( $extends, $implements , $scope );
+            if (!empty( $inherits) ) {
+                $item["inherits"]= $inherits;
+            }
+            if ($args ) {
+                $item["args"]= $args;
+            }
+
+            $structs[] = $item;
         }
 
         if (!empty($parent)) array_pop($scope);
-
-        // if no --sort is given, sort by occurrence
-        if (!isset($this->mOptions['sort']) || $this->mOptions['sort'] == 'no') {
-            usort($structs, 'self::helperSortByLine');
-        }
 
         return $structs;
     }
@@ -648,11 +665,11 @@ class PHPCtags
             if(in_array('i', $this->mOptions['fields'])) {
                 $inherits = array();
                 if(!empty($struct['extends'])) {
-                    $inherits[] =  $this->getRealClassName( $struct['extends']->toString() );
+                    $inherits[] =  $this->getRealClassName( $struct['extends']->toString(), $scope );
                 }
                 if(!empty($struct['implements'])) {
                     foreach($struct['implements'] as $interface) {
-                        $inherits[] = $this->getRealClassName( $interface->toString());
+                        $inherits[] = $this->getRealClassName( $interface->toString(), $scope);
                     }
                 }
                 if(!empty($inherits)){
@@ -804,42 +821,71 @@ class PHPCtags
         return true;
     }
 
-    private function process_single_file($filename)
+    public function process_single_file($filename)
     {
-        if ($this->mOptions['V'] && $this->filecount > 1 && $this->filecount % 64 == 0) {
-            echo " ".$this->filecount." files".PHP_EOL;
-        }
-        $this->filecount++;
-        $startfile = microtime(true);
-
         $this->setMFile((string) $filename);
         $file = file_get_contents($this->mFile);
-        /*
-        $md5 = md5($file);
-        if (isset($this->tagdata[$this->mFile][$md5])) {
-            // The file is the same as the previous time we analyzed and saved.
-            $this->mLines[$this->mFile] = $this->tagdata[$this->mFile][$md5];
-            if ($this->mOptions['V']) {
-                echo ".";
-            }
-            return;
-        }
-        */
+        return $this->struct($this->mParser->parse($file), TRUE);
 
-        $struct = $this->struct($this->mParser->parse($file), TRUE);
-        $finishfile = microtime(true);
-        $this->mLines[$this->mFile] = $this->render($struct);
-        $finishmerge = microtime(true);
-        /*
-        $this->tagdata[$this->mFile][$md5] = $this->mLines[$this->mFile];
-        */
-        if ( isset($this->mOptions['debug']) && $this->mOptions['debug']) {
-            echo "Parse: ".($finishfile - $startfile).", Merge: ".($finishmerge-$finishfile)."; (".$this->filecount.")".$this->mFile.PHP_EOL;
-        } else if ($this->mOptions['V']) {
-            echo ".";
-        }
     }
+    public function get_inherits($extends, $implements, $scope  ) {
+        $inherits = array();
+        if(!empty( $extends  )) {
+            $inherits[] =  $this->getRealClassName( $extends->toString(), $scope );
+        }
 
+        if(!empty( $implements)) {
+            foreach( $implements as $interface) {
+                $inherits[] = $this->getRealClassName( $interface->toString(), $scope );
+            }
+        }
+        return  $inherits ;
+    }
+    public  function get_scope( $old_scope) {
+        if (!empty($old_scope) ) {
+            $scope = array_pop($old_scope);
+            list($type, $name) = each($scope);
+            switch ($type) {
+            case 'class':
+            case 'interface':
+            case '':
+                // n_* stuffs are namespace related scope variables
+                // current > class > namespace
+                $n_scope = array_pop($old_scope);
+                if(!empty($n_scope)) {
+                    list($n_type, $n_name) = each($n_scope);
+                    $s_str =  '\\'. $n_name . '\\' . $name;
+                } else {
+                    $s_str =  '\\' . $name;
+                }
+
+                return  $s_str;
+                break;
+            case 'method':
+                // c_* stuffs are class related scope variables
+                // current > method > class > namespace
+                $c_scope = array_pop($scope);
+                list($c_type, $c_name) = each($c_scope);
+                $n_scope = array_pop($scope);
+                if(!empty($n_scope)) {
+                    list($n_type, $n_name) = each($n_scope);
+                    $s_str =  '\\'. $n_name . '\\' . $c_name . '::' . $name;
+                } else {
+                    $s_str = '\\'. $c_name . '::' . $name;
+
+                }
+
+                return  $s_str;
+                break;
+            default:
+                return  "\\$name";
+                break;
+            }
+        } else {
+            return null;
+        }
+
+    }
 }
 
 class PHPCtagsException extends Exception {

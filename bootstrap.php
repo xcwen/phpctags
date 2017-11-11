@@ -11,6 +11,7 @@ if (file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
     );
 }
 
+require_once(  __DIR__ . "/" ."./deal_config.php" );
 
 
 $version = PHPCtags::VERSION;
@@ -26,15 +27,19 @@ $options = getopt('aC:f:Nno:RuV', array(
     'exclude:',
     'excmd::',
     'fields::',
+    'tags_dir::',
     'kinds::',
     'format::',
     'help',
     'recurse::',
     'sort::',
+    'rebuild::',
+    'realpath_flag::',
     'verbose::',
     'version',
     'memory::',
     'files::',
+    'config-file::',
 ));
 
 $options_info = <<<'EOF'
@@ -120,7 +125,7 @@ if (isset($options['verbose'])) {
 if (isset($options['debug'])) {
     $options['debug'] = true;
 } else {
-    error_reporting(0);
+    #error_reporting(0);
 }
 
 if (isset($options['help'])) {
@@ -238,28 +243,13 @@ if (isset($options['R']) && empty($argv)) {
 //
 
 try {
+    if ($options["config-file"]) {
 
-    if ($options["files"]) {
-        $files_config=json_decode (file_get_contents($options["files"]),true);
+        deal_config($options["config-file"],
+                    yes_or_no($options['rebuild']) == 'yes' ,
+                    yes_or_no($options['realpath_flag']) == 'yes' ,
+                    $options["tags_dir"]  );
 
-        $ctags = new PHPCtags($options);
-        $i=0;
-        $all_count=count($files_config);
-        foreach($files_config as $item) {
-            $src_file=$item[0];
-            $obj_file=$item[1];
-
-            printf("%02d%% %s\n",($i/$all_count)*100, $src_file );
-            $ctags->cleanFiles();
-            $ctags->addFiles([$src_file ]);
-            $result = $ctags->export();
-            if ($result !== false ) {
-                file_put_contents($obj_file,$result);
-            }
-            $i++;
-        }
-
-        printf("%02d%%\n",100 );
         exit;
     }else{
         $ctags = new PHPCtags($options);
