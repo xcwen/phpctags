@@ -160,7 +160,7 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     $php_path_list                = $filter ["php-path-list"];
     $php_file_ext_list            = $filter ["php-file-ext-list"];
     $php_path_list_without_subdir = $filter ["php-path-list-without-subdir"];
-    echo "realpath_flag :$realpath_flag \n";
+    //echo "realpath_flag :$realpath_flag \n";
 
     //得到要处理的文件
     $file_list=[];
@@ -169,7 +169,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         if ( $realpath_flag ) {
             $dir=   realpath($dir);
         }else{
-            echo "xx\n";
             $dir=  get_path ($cur_work_dir, $dir);
         }
         get_filter_file_list( $file_list,  $dir,$php_file_ext_list, true);
@@ -213,6 +212,7 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
 
         //echo $src_file ."->". $obj_file. "\n";
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < fileatime($src_file);
+        $result=null;
 
         if ($need_deal_flag) {
             $pecent =($i/$all_count)*100;
@@ -220,7 +220,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
                 printf("%02d%% %s\n",$pecent , $src_file );
                 $last_pecent = $pecent;
             }
-
             $ctags->cleanFiles();
 
             try {
@@ -235,14 +234,16 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
             } catch(\Exception $e) {
                 echo "PHPParser: {$e->getMessage()} - {$src_file}".PHP_EOL;
                 $tags_map[$tag_key]["find_time"] = $find_time;
-                $result= &$tags_map[$tag_key]["result"] ;
+                $result= $tags_map[$tag_key]["result"] ;
+                print_r($result);
 
             }
 
         }else{
             $tags_map[$tag_key]["find_time"] = $find_time;
-            $result= &$tags_map[$tag_key]["result"] ;
+            $result= $tags_map[$tag_key]["result"] ;
         }
+
         if ($result) {
             deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list );
         }
@@ -254,6 +255,7 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
             unset( $tags_map[$key] );
         }
     }
+
 
     file_put_contents( $tags_file  ,json_encode($tags_map , JSON_PRETTY_PRINT ));
 
