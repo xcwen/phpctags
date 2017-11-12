@@ -207,12 +207,13 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     $find_time=time(NULL);
     $last_pecent=-1;
 
+    $result=null;
     foreach ($file_list as $file_index=> $src_file) {
         $tag_key= $src_file;
 
         //echo $src_file ."->". $obj_file. "\n";
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < fileatime($src_file);
-        $result=null;
+        unset($result);
 
         if ($need_deal_flag) {
             $pecent =($i/$all_count)*100;
@@ -234,14 +235,13 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
             } catch(\Exception $e) {
                 echo "PHPParser: {$e->getMessage()} - {$src_file}".PHP_EOL;
                 $tags_map[$tag_key]["find_time"] = $find_time;
-                $result= $tags_map[$tag_key]["result"] ;
-                print_r($result);
+                $result= &$tags_map[$tag_key]["result"] ;
 
             }
 
         }else{
             $tags_map[$tag_key]["find_time"] = $find_time;
-            $result= $tags_map[$tag_key]["result"] ;
+            $result= &$tags_map[$tag_key]["result"] ;
         }
 
         if ($result) {
