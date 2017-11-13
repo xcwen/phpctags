@@ -40,6 +40,7 @@ $options = getopt('aC:f:Nno:RuV', array(
     'memory::',
     'files::',
     'config-file::',
+    "test::",
 ));
 
 $options_info = <<<'EOF'
@@ -248,7 +249,9 @@ try {
         deal_config($options["config-file"],
                     yes_or_no($options['rebuild']) == 'yes' ,
                     yes_or_no($options['realpath_flag']) == 'yes' ,
-                    $options["tags_dir"]  );
+                    $options["tags_dir"],
+                    yes_or_no(@$options['test']) == 'yes' 
+        );
 
         exit;
     }else{

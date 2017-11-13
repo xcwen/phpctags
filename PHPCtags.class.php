@@ -152,6 +152,7 @@ class PHPCtags
     }
     private function gen_args_default_str( $node )  {
 
+
         if ( $node instanceof \PhpParser\Node\Scalar\LNumber ) {
             return strval($node->value);
         }else if ( $node instanceof \PhpParser\Node\Scalar\String_ ){
@@ -162,6 +163,13 @@ class PHPCtags
             return "" ;
         }else if ( $node instanceof \PhpParser\Node\Expr\BinaryOp\BitwiseOr ){
             return "" ;
+        }else if ( $node instanceof  \PhpParser\Node\Expr\Array_  ){
+            /**  @var  \PhpParser\Node\Expr\Array_   $node  */
+            if ( count( $node->items)==0 ) {
+                return "[]" ;
+            }else{
+                return "[...]" ;
+            }
         }else{
             return @strval($node->value);
         }

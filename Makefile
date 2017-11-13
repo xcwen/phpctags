@@ -9,6 +9,11 @@ source := README.md \
 all: clean build/phpctags.phar 
 	cp build/phpctags.phar phpctags 
 
+p: clean build/phpctags.phar 
+	cp build/phpctags.phar phpctags 
+	cp build/phpctags.phar ~/ac-php/phpctags
+	~/ac-php/cp_to_elpa.sh
+
 .PHONY: clean
 clean:
 	@echo "Cleaning executables ..."

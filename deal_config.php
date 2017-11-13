@@ -22,7 +22,8 @@ function get_config( $config_file ) {
     return json_decode($json_data,true);
 }
 
-function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$function_list ) {
+function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$function_list
+                   , &$construct_map) {
     foreach ( $result as &$item ) {
         $kind=$item["kind"] ;
         $scope=$item["scope"];
@@ -50,6 +51,11 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
             $doc=$class_name;
             $return_type=$class_name;
             $function_list[ ]= [ $kind , $class_name , $doc , $file_pos , $return_type ] ;
+            if (!isset($class_map[$class_name]) ) {
+                $class_map[$class_name] =[];
+            }
+
+
             break;
 
         case "T" :
@@ -62,12 +68,13 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
             $doc=@$item["args"];
             $return_type=@$item["type"];
             $access=$item["access"];
-            $class_map[$class_name][] =[
-                $kind , $name, $doc , $file_pos , $return_type, $class_name,$access  ];
 
             $preg_str= "/\\\\$name\$/";
             if ( $name=="__construct" ||  preg_match($preg_str,$class_name,$matches) ) {
-                $function_list[ ]= [ "f" , $class_name."("  , $doc , $file_pos ,  $class_name  ] ;
+                $construct_map[ $class_name ] =[ $doc , $file_pos];
+            }else{
+                $class_map[$class_name][] =[
+                    $kind , $name, $doc , $file_pos , $return_type, $class_name,$access  ];
             }
 
             break;
@@ -141,7 +148,7 @@ function normalizePath($path)
     return implode('/', $parts);
 }
 
-function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_tags_dir ) {
+function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_tags_dir , $test_flag ) {
     //echo " rebuild_all_flag :$rebuild_all_flag  \n";
     $work_dir = dirname($config_file);
     $config   = get_config( $config_file);
@@ -149,8 +156,12 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
 
     $tag_dir = @$config["tag-dir"];
 
-    if (!$tag_dir ) {
+    $cur_work_dir=$work_dir;
+    if ($tag_dir ) { // find
+        $obj_dir=  get_path ($cur_work_dir, $tag_dir);
+    }else{ // default
         $tag_dir=$need_tags_dir;
+        $obj_dir= $tag_dir."/tags". preg_replace("/[\/\\ \t]/", "-", $work_dir );
     }
 
     @mkdir($tag_dir );
@@ -164,7 +175,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
 
     //得到要处理的文件
     $file_list=[];
-    $cur_work_dir=$work_dir;
     foreach ( $php_path_list as $dir ) {
         if ( $realpath_flag ) {
             $dir=   realpath($dir);
@@ -183,7 +193,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         get_filter_file_list( $file_list,  $dir,$php_file_ext_list, false);
     }
     $deal_file_list=[];
-    $obj_dir= $tag_dir."/tags". preg_replace("/[\/\\ \t]/", "-", $work_dir );
 
     @mkdir($obj_dir);
 
@@ -191,11 +200,18 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     $i=0;
     $all_count=count($file_list);
 
-    $common_json_file=__DIR__. "/common.json";
-    $json_data= json_decode(file_get_contents($common_json_file  ),true );
-    $class_map= $json_data[0];//类信息
-    $function_list= $json_data[1];//函数,常量
-    $class_inherit_map= $json_data[2];//继承
+    $class_map= [];
+    $function_list= [];
+    $class_inherit_map= [];
+
+    if (!$test_flag)  {
+        $common_json_file=__DIR__. "/common.json";
+        $json_data= json_decode(file_get_contents($common_json_file  ),true );
+        $class_map= $json_data[0];//类信息
+        $function_list= $json_data[1];//函数,常量
+        $class_inherit_map= $json_data[2];//继承
+    }
+
     $tags_file="$obj_dir/tag-file-map.json";
     $tags_data=@file_get_contents( $tags_file );
     if (!$tags_data ) {
@@ -206,6 +222,7 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     $tags_map = json_decode( $tags_data ,true);
     $find_time=time(NULL);
     $last_pecent=-1;
+    $construct_map=[];
 
     $result=null;
     foreach ($file_list as $file_index=> $src_file) {
@@ -214,7 +231,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         //echo $src_file ."->". $obj_file. "\n";
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < fileatime($src_file);
         unset($result);
-
         if ($need_deal_flag) {
             $pecent =($i/$all_count)*100;
             if ($pecent != $last_pecent) {
@@ -245,11 +261,14 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         }
 
         if ($result) {
-            deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list );
+            deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list ,$construct_map );
         }
         $i++;
     }
 
+    construct_map_to_function_list( $class_map , $construct_map, $class_inherit_map, $function_list  );
+
+    //clean old file-data
     foreach ( $tags_map as $key  =>&$item  ) {
         if ($item["find_time"] != $find_time) {
             unset( $tags_map[$key] );
@@ -259,9 +278,41 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
 
     file_put_contents( $tags_file  ,json_encode($tags_map , JSON_PRETTY_PRINT ));
 
+    $json_flag= JSON_PRETTY_PRINT ;
+    //$json_flag= null;
     file_put_contents( "$obj_dir/tags.json" ,json_encode( [
         $class_map, $function_list, $class_inherit_map  , $file_list
-    ],  JSON_PRETTY_PRINT ));
+    ], $json_flag  ));
+
+}
+
+function construct_map_to_function_list( &$class_map , &$construct_map, &$class_inherit_map, &$function_list  ) {
+    // construct_map => function_list
+    $kind="f";
+    foreach ($class_map as $class_name => &$_v ) {
+        $cur_map=[];
+        $find_item=null;
+        $parent_class=$class_name;
+        $tmp_parent_class="";
+        do {
+
+            $find_item=@$construct_map[$parent_class];
+            if ($find_item) {
+                break;
+            }
+            $cur_map[$parent_class ]=true;
+            $tmp_parent_class=$parent_class;
+            $parent_class=@$class_inherit_map[$parent_class][0];
+            if ($parent_class) {
+                if ($parent_class[0]!="\\" ) { //cur namespace
+                    $parent_class=preg_replace("/[A-Za-z0-8_]*\$/","", $tmp_parent_class ). "$parent_class";
+                }
+            }
+        } while($parent_class && !isset ($cur_map[$parent_class]) );
+        if ($find_item) {
+            $function_list[ ]= [ $kind, $class_name."(" ,  $find_item[0] , $find_item[1], $class_name ] ;
+        }
+    }
 
 }
 
