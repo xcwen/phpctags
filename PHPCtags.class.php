@@ -116,16 +116,16 @@ class PHPCtags
 
         if (  $className[0] != "\\"  ){
             $ret_arr=explode("\\", $className , 2  );
+            $pack_name=$ret_arr[0];
             if (count($ret_arr)==2){
-                $pack_name=$ret_arr[0];
                 if (isset($this->mUseConfig[ $pack_name])){
-                     return $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
+                    return $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
                 }else{
                     return $className;
                 }
             }else{
                 if (isset($this->mUseConfig[$className])){
-                    return $this->mUseConfig[$className];
+                    return $this->mUseConfig[$pack_name] ;
                 }else{
                     return $className;
                 }
@@ -207,8 +207,11 @@ class PHPCtags
                 $this->struct($subNode);
             }
         } elseif ($node instanceof PHPParser\Node\Stmt\UseUse ) {
-            $this->mUseConfig[$node->alias ]= $node->name->toString() ;
-
+            $use_name=$node->name->toString();
+            if ($use_name[0] != "\\") {
+                $use_name="\\".$use_name;
+            }
+            $this->mUseConfig[$node->alias ]= $use_name ;
 
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse ) {
 
