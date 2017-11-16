@@ -31,6 +31,7 @@ $phar->buildFromIterator(
                 $excludes = array(
                     '.*',
                     'tags',
+                    'ac-php/*',
                     'build/*',
                     'tests/*',
                     'Makefile',
