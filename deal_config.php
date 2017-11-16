@@ -228,7 +228,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     foreach ($file_list as $file_index=> $src_file) {
         $tag_key= $src_file;
 
-        //echo $src_file ."->". $obj_file. "\n";
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < filemtime($src_file);
         unset($result);
         if ($need_deal_flag) {

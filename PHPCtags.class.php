@@ -124,13 +124,23 @@ class PHPCtags
                 if (isset($this->mUseConfig[ $pack_name])){
                     return $this->mUseConfig[$pack_name]."\\".$ret_arr[1] ;
                 }else{
-                    return $className;
+                    $namespace= $this-> get_key_in_scope( $scope, "namespace" );
+                    if ($namespace) {
+                        return"\\". $namespace."\\".$className;
+                    }else{
+                        return"\\".$className;
+                    }
                 }
             }else{
                 if (isset($this->mUseConfig[$className])){
                     return $this->mUseConfig[$pack_name] ;
                 }else{
-                    return $className;
+                    $namespace= $this-> get_key_in_scope( $scope, "namespace" );
+                    if ($namespace) {
+                        return"\\". $namespace."\\".$className;
+                    }else{
+                        return"\\".$className;
+                    }
                 }
             }
 
@@ -398,7 +408,6 @@ class PHPCtags
             $access = $this->getNodeAccess($node);
             $return_type=$this->func_get_return_type($node, $scope);
 
-            //$ret_item[]= preg_replace(  "/[ \t]*,[ \t]*/", ", " ,trim(preg_replace(  "/.*\\((.*)\\).*/","\\1" , $lines[$struct['line'] - 1])))
             $args=$this->get_args ( $node );
 
 
