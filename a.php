@@ -2,7 +2,8 @@
 /**
  * @see \Illuminate\Routing\Router
  */
-class Testb  extends Facade {
+class Testb  extends Facade 
+{
     /**
      * @return $this
      */

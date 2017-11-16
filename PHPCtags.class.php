@@ -21,6 +21,9 @@ class PHPCtags
         'T' => 'usetrait',
     );
 
+    /**
+     * @var \PhpParser\Parser\Php7
+    */
     private $mParser;
     private $mLines;
     private $mOptions;
@@ -168,7 +171,7 @@ class PHPCtags
             if ( count( $node->items)==0 ) {
                 return "[]" ;
             }else{
-                return "[...]" ;
+                return "array" ;
             }
         }else{
             return @strval($node->value);
@@ -180,11 +183,15 @@ class PHPCtags
 
         $args_list=[];
         foreach ( $node->getParams() as $param ) {
+            $ref_str="";
+            if (@$param->byRef == 1 ) {
+                //$ref_str="&";
+            }
             if ($param->default ) {
                 $def_str=$this->gen_args_default_str( $param->default );
-                $args_list[]="\$".$param->name."=$def_str";
+                $args_list[]="$ref_str\$".$param->name."=$def_str";
             }else{
-                $args_list[]="\$".$param->name;
+                $args_list[]="$ref_str\$".$param->name;
             }
         }
         return join(", " ,$args_list  );
