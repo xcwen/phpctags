@@ -72,10 +72,9 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
             $preg_str= "/\\\\$name\$/";
             if ( $name=="__construct" ||  preg_match($preg_str,$class_name,$matches) ) {
                 $construct_map[ $class_name ] =[ $doc , $file_pos];
-            }else{
-                $class_map[$class_name][] =[
-                    $kind , $name, $doc , $file_pos , $return_type, $class_name,$access  ];
             }
+            $class_map[$class_name][] =[
+                $kind , $name, $doc , $file_pos , $return_type, $class_name,$access  ];
 
             break;
 
