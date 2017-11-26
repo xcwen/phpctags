@@ -48,9 +48,8 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
                     $class_inherit_map[$class_name] = $item["inherits"];
                 }
             }
-            $doc=$class_name;
             $return_type=$class_name;
-            $function_list[ ]= [ $kind , $class_name , $doc , $file_pos , $return_type ] ;
+            $function_list[ ]= [ $kind , $class_name , "" , $file_pos , $return_type ] ;
             if (!isset($class_map[$class_name]) ) {
                 $class_map[$class_name] =[];
             }
@@ -88,11 +87,12 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
 
             $define_scope=$item["args"];
             $return_type=$item["type"];
+            $access=$item["access"];
             $doc="";
             if ( $define_scope =="class")  {
                 $class_name= $scope;
                 $class_map[$class_name][] =[
-                    $kind , $name, $doc , $file_pos , $return_type ];
+                    $kind , $name, $doc , $file_pos , $return_type,$class_name  , $access ];
             }else{
                 $define_name=$scope."\\".$name;
                 $function_list[ ]= [ $kind , $define_name, $doc , $file_pos , $return_type ] ;
@@ -147,40 +147,42 @@ function normalizePath($path)
     return implode('/', $parts);
 }
 
-function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_tags_dir , $test_flag ) {
-    //echo " rebuild_all_flag :$rebuild_all_flag  \n";
-    $work_dir = dirname($config_file);
-    $config   = get_config( $config_file);
-    chdir($work_dir);
-
-    $tag_dir = @$config["tag-dir"];
-
-    $cur_work_dir=$work_dir;
-    if ($tag_dir ) { // find
-        $obj_dir=  get_path ($cur_work_dir, $tag_dir);
-    }else{ // default
-        $tag_dir=$need_tags_dir;
-        $obj_dir= $tag_dir."/tags". preg_replace("/[\/\\ \t]/", "-", $work_dir );
-    }
-
-    @mkdir($tag_dir );
-
-    $filter                       = $config["filter"] ;
-    $can_use_external_dir         = @$filter["can-use-external-dir"];
-    $php_path_list                = $filter ["php-path-list"];
-    $php_file_ext_list            = $filter ["php-file-ext-list"];
-    $php_path_list_without_subdir = $filter ["php-path-list-without-subdir"];
-    //echo "realpath_flag :$realpath_flag \n";
-
+function deal_file_tags( $cache_flag , $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir ,$php_file_ext_list ) {
     //得到要处理的文件
     $file_list=[];
+
+
+    $ctags = new PHPCtags([]);
+    $i=0;
+
+    $class_map= [];
+    $function_list= [];
+    $class_inherit_map= [];
+
+    $cache_file_name= "$obj_dir/tags-cache.json" ;
+
+
+    if (!$test_flag   )  {
+        if ($cache_flag ) {
+            $common_json_file=__DIR__. "/common.json";
+        }else{
+            $common_json_file=  $cache_file_name;
+        }
+        $json_data= json_decode(file_get_contents($common_json_file  ),true );
+        $class_map= $json_data[0];//类信息
+        $function_list= $json_data[1];//函数,常量
+        $class_inherit_map= $json_data[2];//继承
+        $file_list= $json_data[3];//原先的文件列表
+    }
+    $cache_file_count=count($file_list);
+
     foreach ( $php_path_list as $dir ) {
         if ( $realpath_flag ) {
             $dir=   realpath($dir);
         }else{
             $dir=  get_path ($cur_work_dir, $dir);
         }
-        get_filter_file_list( $file_list,  $dir,$php_file_ext_list, true);
+        get_filter_file_list( $cache_flag,  $file_list,  $dir,$php_file_ext_list, true);
     }
 
     foreach (  $php_path_list_without_subdir as $dir ) {
@@ -189,32 +191,20 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         }else{
             $dir=  get_path ($cur_work_dir, $dir);
         }
-        get_filter_file_list( $file_list,  $dir,$php_file_ext_list, false);
-    }
-    $deal_file_list=[];
-
-    @mkdir($obj_dir);
-
-    $ctags = new PHPCtags([]);
-    $i=0;
-    $all_count=count($file_list);
-
-    $class_map= [];
-    $function_list= [];
-    $class_inherit_map= [];
-
-    if (!$test_flag)  {
-        $common_json_file=__DIR__. "/common.json";
-        $json_data= json_decode(file_get_contents($common_json_file  ),true );
-        $class_map= $json_data[0];//类信息
-        $function_list= $json_data[1];//函数,常量
-        $class_inherit_map= $json_data[2];//继承
+        get_filter_file_list( $cache_flag, $file_list,  $dir,$php_file_ext_list, false);
     }
 
-    $tags_file="$obj_dir/tag-file-map.json";
-    $tags_data=@file_get_contents( $tags_file );
-    if (!$tags_data ) {
+    $deal_all_count=count($file_list)-$cache_file_count;
+
+
+    if ( $cache_flag ) {
         $tags_data='{}';
+    }else{
+        $tags_file="$obj_dir/tag-file-map.json";
+        $tags_data=@file_get_contents( $tags_file );
+        if (!$tags_data ) {
+            $tags_data='{}';
+        }
     }
 
 
@@ -224,13 +214,15 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     $construct_map=[];
 
     $result=null;
-    foreach ($file_list as $file_index=> $src_file) {
+    for ( $i= 0; $i< $deal_all_count; $i++ ) {
+        $file_index=$cache_file_count+$i ;
+        $src_file= $file_list[$file_index ];
         $tag_key= $src_file;
 
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < filemtime($src_file);
         unset($result);
         if ($need_deal_flag) {
-            $pecent =($i/$all_count)*100;
+            $pecent =($i/$deal_all_count)*100;
             if ($pecent != $last_pecent) {
                 printf("%02d%% %s\n",$pecent , $src_file );
                 $last_pecent = $pecent;
@@ -261,7 +253,6 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         if ($result) {
             deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list ,$construct_map );
         }
-        $i++;
     }
 
     construct_map_to_function_list( $class_map , $construct_map, $class_inherit_map, $function_list  );
@@ -274,15 +265,118 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     }
 
 
-    file_put_contents( $tags_file  ,json_encode($tags_map , JSON_PRETTY_PRINT ));
+    if (! $cache_flag ) {
+        file_put_contents( $tags_file  ,json_encode($tags_map , JSON_PRETTY_PRINT ));
+    }
 
-    $json_flag= JSON_PRETTY_PRINT ;
-    //$json_flag= null;
-    file_put_contents( "$obj_dir/tags.json" ,json_encode( [
-        $class_map, $function_list, $class_inherit_map  , $file_list
-    ], $json_flag  ));
+    if ($test_flag || $cache_flag ) {
+        $json_flag= JSON_PRETTY_PRINT ;
+        //$json_flag= null;
+        if ($cache_flag) {
+            $out_file_name=$cache_file_name;
+        }else{
+            $out_file_name= "$obj_dir/tags.json";
+        }
+
+        file_put_contents(  $out_file_name ,json_encode( [
+            $class_map, $function_list, $class_inherit_map  , $file_list
+        ], $json_flag  ));
+    }
+    if (!$cache_flag) {
+        save_as_el( "$obj_dir/tags.el", $class_map, $function_list, $class_inherit_map, $file_list);
+    }
+}
+
+function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_tags_dir , $test_flag ) {
+    //echo " rebuild_all_flag :$rebuild_all_flag  \n";
+    $work_dir = dirname($config_file);
+    $config   = get_config( $config_file);
+    chdir($work_dir);
+
+    $tag_dir = @$config["tag-dir"];
+
+    $cur_work_dir=$work_dir;
+    if ($tag_dir ) { // find
+        $obj_dir=  get_path ($cur_work_dir, $tag_dir);
+    }else{ // default
+        $tag_dir=$need_tags_dir;
+        $obj_dir= $tag_dir."/tags". preg_replace("/[\/\\ \t]/", "-", $work_dir );
+    }
+
+    @mkdir($tag_dir, 0777, true );
+    @mkdir($obj_dir, 0777, true );
+
+    $filter                       = $config["filter"] ;
+    $can_use_external_dir         = @$filter["can-use-external-dir"];
+    $php_path_list                = $filter ["php-path-list"];
+    $php_file_ext_list            = $filter ["php-file-ext-list"];
+    $php_path_list_without_subdir = $filter ["php-path-list-without-subdir"];
+    //echo "realpath_flag :$realpath_flag \n";
+
+
+    $cache_file_name= "$obj_dir/tags-cache.json" ;
+    if ( !file_exists( $cache_file_name )  || $rebuild_all_flag )  {
+        $cache_flag=true;
+        deal_file_tags( $cache_flag ,  $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
+    } 
+    $cache_flag=false;
+    deal_file_tags( $cache_flag ,  $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
 
 }
+function save_as_el( $file_name,  $class_map, $function_list, $class_inherit_map  , $file_list ) {
+    $fp=fopen($file_name, "w");
+    $str= "(setq  g-ac-php-tmp-tags  [\n(\n" ;
+    //class_map
+    foreach( $class_map as $class_name=> &$c_field_list ) {
+        $class_name_str= addslashes($class_name);
+        $str.=  "  (\"". $class_name_str  ."\".[\n"   ;
+        foreach ($c_field_list as &$c_f_item ) {
+            //print_r( $c_f_item );
+            $doc=addslashes( $c_f_item[2]);
+            $return_type_str=addslashes( $c_f_item[4]);
+            $name=addslashes( $c_f_item[1]);
+            $str.="    [\"{$c_f_item[0]}\" \"$name\" \"{$doc}\"  \"{$c_f_item[3]}\"  \"$return_type_str\" \"$class_name_str\" \"{$c_f_item[6]}\"  ]\n";
+        }
+        $str.=  "  ])\n"  ;
+    }
+    $str.=  ")\n"  ;
+    fwrite($fp ,  $str );
+    $str="[\n";
+
+    //[ $kind , $define_name, $doc , $file_pos , $return_type ] ;
+    foreach( $function_list as  &$f_item) {
+        $doc=addslashes( $f_item[2]);
+        $function_name_str=addslashes( $f_item[1]);
+        $return_type_str=addslashes( $f_item[4]);
+        $str.="  [\"{$f_item[0]}\" \"$function_name_str\" \"{$doc}\"  \"{$f_item[3]}\"  \"$return_type_str\"  ]\n";
+    }
+    $str.="]\n";
+    fwrite($fp ,  $str );
+
+    $str="(\n";
+    foreach( $class_inherit_map as $class_name=> &$i_list ) {
+        $class_name_str= addslashes($class_name);
+        $str.=  "  (\"". $class_name_str  ."\". [ "   ;
+        foreach ($i_list as &$i_item ) {
+            $str .= "\"". addslashes($i_item) ."\" " ;
+        }
+        $str.=   "])\n"  ;
+    }
+    $str.=")\n";
+    fwrite($fp ,  $str );
+
+
+
+    $str="[\n";
+    foreach( $file_list as  &$f_file) {
+        $str.="  \"". addslashes($f_file )  ."\"\n" ;
+    }
+    $str.="]\n";
+    fwrite($fp ,  $str );
+    fwrite($fp ,  "])\n" );
+    fclose($fp );
+}
+
 
 function construct_map_to_function_list( &$class_map , &$construct_map, &$class_inherit_map, &$function_list  ) {
     // construct_map => function_list
@@ -314,18 +408,38 @@ function construct_map_to_function_list( &$class_map , &$construct_map, &$class_
 
 }
 
-function get_filter_file_list( &$file_list, $dir ,$file_ext_list , $reduce_flag   )
+function get_filter_file_list( $cache_flag, &$file_list, $dir ,$file_ext_list , $reduce_flag   )
 {
+    //vendor 里都是需要缓存的
+    if (!$cache_flag) {  //
+        if (preg_match("/\/vendor\//", $dir  )) {
+            return;
+        }
+    }
+
 
     $dir_list=scandir($dir);
     foreach($dir_list as $file){
         if($file[0]!='.'){
             if(  is_dir($dir.'/'.$file) && $reduce_flag){
-                get_filter_file_list( $file_list, $dir."/$file" ,$file_ext_list , $reduce_flag   );
+
+                if (!$cache_flag) {  //
+                    if ($file=="vendor") {
+                        return;
+                    }
+                }
+
+                get_filter_file_list( $cache_flag, $file_list, $dir."/$file" ,$file_ext_list , $reduce_flag   );
             }else{
                 $file_path = pathinfo( $file);
                 if (in_array(@$file_path['extension'], $file_ext_list) ) {
-                    $file_list[]= "$dir/$file";
+                    if ($cache_flag ) {
+                        if (preg_match("/\/vendor\//", $dir  )) {
+                            $file_list[]= "$dir/$file";
+                        }
+                    }else {
+                        $file_list[]= "$dir/$file";
+                    }
                 }
             }
         }
