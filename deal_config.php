@@ -427,6 +427,10 @@ function get_filter_file_list( $cache_flag, &$file_list, $dir ,$file_ext_list , 
                     if ($file=="vendor") {
                         return;
                     }
+                }else { //vendor 里 test ,tests 目录不处理
+                    if (in_array( strtolower($file), ["test", "tests" ] ) !==false  )  {
+                        return;
+                    }
                 }
 
                 get_filter_file_list( $cache_flag, $file_list, $dir."/$file" ,$file_ext_list , $reduce_flag   );
