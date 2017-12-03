@@ -1,6 +1,6 @@
 {
   "use-cscope": null,
-    "tag-dir": "./ac-php",
+  "tag-dir": null,
   "filter": {
     "php-file-ext-list": [
       "php"

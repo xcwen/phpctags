@@ -425,11 +425,11 @@ function get_filter_file_list( $cache_flag, &$file_list, $dir ,$file_ext_list , 
 
                 if (!$cache_flag) {  //
                     if ($file=="vendor") {
-                        return;
+                        continue;
                     }
                 }else { //vendor 里 test ,tests 目录不处理
                     if (in_array( strtolower($file), ["test", "tests" ] ) !==false  )  {
-                        return;
+                        continue;
                     }
                 }
 
