@@ -72,6 +72,10 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
             if ( $name=="__construct" ||  preg_match($preg_str,$class_name,$matches) ) {
                 $construct_map[ $class_name ] =[ $doc , $file_pos];
             }
+
+            if ( $kind=="m"  ) {
+                $name.="(";
+            }
             $class_map[$class_name][] =[
                 $kind , $name, $doc , $file_pos , $return_type, $class_name,$access  ];
 
@@ -147,7 +151,7 @@ function normalizePath($path)
     return implode('/', $parts);
 }
 
-function deal_file_tags( $cache_flag , $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir ,$php_file_ext_list ) {
+function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir ,$php_file_ext_list ) {
     //得到要处理的文件
     $file_list=[];
 
@@ -159,7 +163,6 @@ function deal_file_tags( $cache_flag , $test_flag, $rebuild_all_flag, $cur_work_
     $function_list= [];
     $class_inherit_map= [];
 
-    $cache_file_name= "$obj_dir/tags-cache.json" ;
 
 
     if (!$test_flag   )  {
@@ -314,13 +317,13 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
     //echo "realpath_flag :$realpath_flag \n";
 
 
-    $cache_file_name= "$obj_dir/tags-cache.json" ;
+    $cache_file_name= "$obj_dir/tags-cache-v2.json" ;
     if ( !file_exists( $cache_file_name )  || $rebuild_all_flag )  {
         $cache_flag=true;
-        deal_file_tags( $cache_flag ,  $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
-    } 
+        deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
+    }
     $cache_flag=false;
-    deal_file_tags( $cache_flag ,  $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
+    deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
 
 }
 function save_as_el( $file_name,  $class_map, $function_list, $class_inherit_map  , $file_list ) {

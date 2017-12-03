@@ -1,7 +1,10 @@
 #!/usr/bin/php
 <?php
 # 生成  ~/ac-php/ac-php-comm-tags-data.el 文件步骤:
-# 1:  php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
+# 1:
+/*
+php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
+*/
 # 2: 运行本文件  ./gen_common_json.php
 # 3: 在空项目中生成 tags.el
 # 4 : 复制 tags.el  ~/ac-php/ac-php-comm-tags-data.el
