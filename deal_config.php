@@ -303,6 +303,9 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
         $obj_dir=  get_path ($cur_work_dir, $tag_dir);
     }else{ // default
         $tag_dir=$need_tags_dir;
+        if (strtoupper(substr(PHP_OS, 0, 3))==='WIN') {
+            $work_dir = "/". preg_replace("/[\:\\ \t]/", "", $work_dir);
+        }
         $obj_dir= $tag_dir."/tags". preg_replace("/[\/\\ \t]/", "-", $work_dir );
     }
 
