@@ -23,7 +23,7 @@ function get_config( $config_file ) {
 }
 
 function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$function_list
-                   , &$construct_map) {
+                   , &$construct_map, &$class_define_map) {
     foreach ( $result as &$item ) {
         $kind=$item["kind"] ;
         $scope=$item["scope"];
@@ -53,7 +53,7 @@ function deal_tags($file_index, &$result ,&$class_inherit_map  ,&$class_map, &$f
             if (!isset($class_map[$class_name]) ) {
                 $class_map[$class_name] =[];
             }
-
+            $class_define_map[ $class_name ] =[ "", $file_pos];
 
             break;
 
@@ -215,6 +215,7 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
     $find_time=time(NULL);
     $last_pecent=-1;
     $construct_map=[];
+    $class_define_map=[];
 
     $result=null;
     for ( $i= 0; $i< $deal_all_count; $i++ ) {
@@ -254,11 +255,11 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
         }
 
         if ($result) {
-            deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list ,$construct_map );
+            deal_tags($file_index, $result ,$class_inherit_map  ,$class_map, $function_list ,$construct_map ,$class_define_map );
         }
     }
 
-    construct_map_to_function_list( $class_map , $construct_map, $class_inherit_map, $function_list  );
+    construct_map_to_function_list( $class_map , $construct_map, $class_inherit_map, $function_list , $class_define_map  );
 
     //clean old file-data
     foreach ( $tags_map as $key  =>&$item  ) {
@@ -381,7 +382,7 @@ function save_as_el( $file_name,  $class_map, $function_list, $class_inherit_map
 }
 
 
-function construct_map_to_function_list( &$class_map , &$construct_map, &$class_inherit_map, &$function_list  ) {
+function construct_map_to_function_list( &$class_map , &$construct_map, &$class_inherit_map, &$function_list ,&$class_define_map ) {
     // construct_map => function_list
     $kind="f";
     foreach ($class_map as $class_name => &$_v ) {
@@ -404,9 +405,13 @@ function construct_map_to_function_list( &$class_map , &$construct_map, &$class_
                 }
             }
         } while($parent_class && !isset ($cur_map[$parent_class]) );
-        if ($find_item) {
-            $function_list[ ]= [ $kind, $class_name."(" ,  $find_item[0] , $find_item[1], $class_name ] ;
+        if (!$find_item) { //没有找到,就用类定义
+            $find_item= @$class_define_map[$class_name ];
         }
+        if ($find_item) {
+            $function_list[]= [ $kind, $class_name."(" ,  $find_item[0] , $find_item[1], $class_name ] ;
+        }
+
     }
 
 }
