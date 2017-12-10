@@ -6,8 +6,15 @@
 php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
 */
 # 2: 运行本文件  ./gen_common_json.php
+
 # 3: 在空项目中生成 tags.el
-# 4 : 复制 tags.el  ~/ac-php/ac-php-comm-tags-data.el
+/*
+php ./bootstrap.php --config-file=/home/jim/test/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes
+*/
+# 4 : 复制
+/*
+ cp /home/jim/test/ac-php-tags/tags.el  ~/ac-php/ac-php-comm-tags-data.el
+*/
 
 $json_data= json_decode( file_get_contents( "/home/jim/.ac-php/tags-home-jim-ac-php-commom_php/tags.json"),true );
 $json_data[3]=[] ;

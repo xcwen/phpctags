@@ -157,7 +157,26 @@ class PHPCtags
 
 
         if ( $node instanceof \PhpParser\Node\Scalar\LNumber ) {
-            return strval($node->value);
+            /**  @var  \PhpParser\Node\Scalar\LNumber  $node  */
+            $kind= $node->getAttribute("kind");
+            switch ($kind ) {
+            case \PhpParser\Node\Scalar\LNumber::KIND_DEC:
+                return strval($node->value);
+                break;
+            case \PhpParser\Node\Scalar\LNumber::KIND_OCT:
+                return sprintf("0%o" , $node->value ) ;
+                break;
+            case \PhpParser\Node\Scalar\LNumber::KIND_HEX:
+                return sprintf("0x%x" , $node->value ) ;
+                break;
+            case \PhpParser\Node\Scalar\LNumber::KIND_BIN:
+                return sprintf("0b%b" , $node->value ) ;
+                break;
+            default:
+                return strval($node->value);
+                break;
+            }
+
         }else if ( $node instanceof \PhpParser\Node\Scalar\String_ ){
             return "'".$node->value."'";
         }else if ( $node instanceof \PhpParser\Node\Expr\ConstFetch ){
