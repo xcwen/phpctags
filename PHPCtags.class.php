@@ -141,7 +141,13 @@ class PHPCtags
     }
 
     private function  func_get_return_type($node,$scope) {
-        $return_type="". $node->returnType;
+
+        if ( $node->returnType instanceof PhpParser\Node\NullableType ) {
+            $return_type="". $node->returnType->type ;
+        }else{
+            $return_type="". $node->returnType;
+        }
+
 
         if (!$return_type )  {
             if ( preg_match( "/@return[ \t]+([\$a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
