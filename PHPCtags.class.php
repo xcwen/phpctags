@@ -107,7 +107,7 @@ class PHPCtags
     }
 
     private function getRealClassName($className ,$scope  ){
-        if ( $className=="\$this" ||  $className == "static"   ) {
+        if ( $className=="\$this" ||  $className == "static"  || $className =="self" ) {
             $namespace= $this-> get_key_in_scope( $scope, "namespace" );
             $className=  $this-> get_key_in_scope( $scope, "class" );
             if ( $namespace  ) {
