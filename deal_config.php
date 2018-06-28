@@ -151,7 +151,7 @@ function normalizePath($path)
     return implode('/', $parts);
 }
 
-function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir ,$php_file_ext_list ) {
+function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir ,$php_file_ext_list, $start_pecent, $max_percent  ) {
     //得到要处理的文件
     $file_list=[];
 
@@ -226,9 +226,9 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
         $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < filemtime($src_file);
         unset($result);
         if ($need_deal_flag) {
-            $pecent =($i/$deal_all_count)*100;
+            $pecent =($i/$deal_all_count)*$max_percent;
             if ($pecent != $last_pecent) {
-                printf("%02d%% %s\n",$pecent , $src_file );
+                printf("%02d%% %s\n", $start_pecent+$pecent , $src_file );
                 $last_pecent = $pecent;
             }
             $ctags->cleanFiles();
@@ -322,12 +322,17 @@ function deal_config( $config_file , $rebuild_all_flag, $realpath_flag, $need_ta
 
 
     $cache_file_name= "$obj_dir/tags-cache-v2.json" ;
+
+    $start_pecent=0;
+    $max_percent=100;
     if ( !file_exists( $cache_file_name )  || $rebuild_all_flag )  {
         $cache_flag=true;
-        deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
+        $max_percent=50;
+        deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list, $start_pecent, $max_percent );
+        $start_pecent=50;
     }
     $cache_flag=false;
-    deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list );
+    deal_file_tags( $cache_flag ,  $cache_file_name, $test_flag,$rebuild_all_flag, $cur_work_dir, $obj_dir,   $realpath_flag, $php_path_list  , $php_path_list_without_subdir  ,$php_file_ext_list ,$start_pecent, $max_percent);
 
 }
 function save_as_el( $file_name,  $class_map, $function_list, $class_inherit_map  , $file_list ) {
