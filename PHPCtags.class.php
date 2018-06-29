@@ -150,7 +150,7 @@ class PHPCtags
 
 
         if (!$return_type )  {
-            if ( preg_match( "/@return[ \t]+([\$a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
+            if ( preg_match( "/@return[ \t]+([\$a-zA-Z0-9_\\\\]+)/",$node->getDocComment(), $matches) ){
                 $return_type= $matches[1];
             }
         }
@@ -486,6 +486,8 @@ class PHPCtags
         } elseif ($node instanceof PHPParser\Node\Stmt\Interface_) {
             $kind = 'i';
             $name = $node->name;
+            $extends = @$node->extends;
+
             $line = $node->getLine();
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('interface' => $name));
@@ -873,7 +875,13 @@ class PHPCtags
     public function get_inherits($extends, $implements, $scope  ) {
         $inherits = array();
         if(!empty( $extends  )) {
-            $inherits[] =  $this->getRealClassName( $extends->toString(), $scope );
+            if (is_array($extends )) {
+                foreach ( $extends as $item ) {
+                    $inherits[] =  $this->getRealClassName( $item->toString(), $scope );
+                }
+            }else{
+                $inherits[] =  $this->getRealClassName( $extends->toString(), $scope );
+            }
         }
 
         if(!empty( $implements)) {
