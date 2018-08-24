@@ -313,12 +313,12 @@ class PHPCtags
 
 
                     }else if ( preg_match(
-                        "/@method[ \t]+([^\\(]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\\((.*)\\)/",
+                        "/@method[ \t]+(static[ \t]+)*([^\\(]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\\((.*)\\)/",
                         $line_str, $matches) ){
-                        //* @method string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
-                        $field_name=$matches[2];
-                        $args =$matches[3];
-                        $field_return_type= $this->getRealClassName( $matches[1],$filed_scope);
+                        //* @method static string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
+                        $field_name=$matches[3];
+                        $args =$matches[4];
+                        $field_return_type= $this->getRealClassName( $matches[2],$filed_scope);
                         $structs[] = array(
                             //'file' => $this->mFile,
                             'kind' => "m",
