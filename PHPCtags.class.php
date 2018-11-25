@@ -333,6 +333,9 @@ class PHPCtags
                         preg_match(
                         "/@use[ \t]+([a-zA-Z0-9_\\\\]+)/",
                         $line_str, $matches)
+                        or preg_match(
+                            "/@mixin[ \t]+([a-zA-Z0-9_\\\\]+)/",
+                            $line_str, $matches)
                         or (
                             $extends && $extends->toString() =="Facade" &&
                             preg_match(
