@@ -663,7 +663,7 @@ class PHPCtags
             if (in_array('s', $this->mOptions['fields']) && !empty($struct['scope'])) {
                 // $scope, $type, $name are current scope variables
                 $scope = array_pop($struct['scope']);
-                list($type, $name) = each($scope);
+                list($type, $name) = [key($scope), current($scope)];
                 switch ($type) {
                     case 'class':
                     case 'interface':
@@ -671,7 +671,7 @@ class PHPCtags
                         // current > class > namespace
                         $n_scope = array_pop($struct['scope']);
                         if(!empty($n_scope)) {
-                            list($n_type, $n_name) = each($n_scope);
+                            list($n_type, $n_name) = [key($n_scope), current($n_scope)];
                             $s_str =  $n_name . '\\' . $name;
                         } else {
                             $s_str =   $name;
@@ -683,10 +683,10 @@ class PHPCtags
                         // c_* stuffs are class related scope variables
                         // current > method > class > namespace
                         $c_scope = array_pop($struct['scope']);
-                        list($c_type, $c_name) = each($c_scope);
+                        list($c_type, $c_name) = [key($c_scope), current($c_scope)];
                         $n_scope = array_pop($struct['scope']);
                         if(!empty($n_scope)) {
-                            list($n_type, $n_name) = each($n_scope);
+                            list($n_type, $n_name) = [key($n_scope), current($n_scope)];
                             $s_str =  $n_name . '\\' . $c_name . '::' . $name;
                         } else {
                             $s_str = $c_name . '::' . $name;
@@ -897,7 +897,7 @@ class PHPCtags
     public  function get_scope( $old_scope) {
         if (!empty($old_scope) ) {
             $scope = array_pop($old_scope);
-            list($type, $name) = each($scope);
+            list($type, $name) = [key($scope), current($scope)];
             switch ($type) {
             case 'class':
             case 'interface':
@@ -906,7 +906,7 @@ class PHPCtags
                 // current > class > namespace
                 $n_scope = array_pop($old_scope);
                 if(!empty($n_scope)) {
-                    list($n_type, $n_name) = each($n_scope);
+                    list($n_type, $n_name) = [key($n_scope), current($n_scope)];
                     $s_str =  '\\'. $n_name . '\\' . $name;
                 } else {
                     $s_str =  '\\' . $name;
@@ -918,10 +918,10 @@ class PHPCtags
                 // c_* stuffs are class related scope variables
                 // current > method > class > namespace
                 $c_scope = array_pop($scope);
-                list($c_type, $c_name) = each($c_scope);
+                list($c_type, $c_name) = [key($c_scope), current($c_scope)];
                 $n_scope = array_pop($scope);
                 if(!empty($n_scope)) {
-                    list($n_type, $n_name) = each($n_scope);
+                    list($n_type, $n_name) = [key($n_scope), current($n_scope)];
                     $s_str =  '\\'. $n_name . '\\' . $c_name . '::' . $name;
                 } else {
                     $s_str = '\\'. $c_name . '::' . $name;
