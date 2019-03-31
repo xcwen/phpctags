@@ -212,7 +212,7 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
 
 
     $tags_map = json_decode( $tags_data ,true);
-    $find_time=time(NULL);
+    $find_time=time();
     $last_pecent=-1;
     $construct_map=[];
     $class_define_map=[];
@@ -238,7 +238,7 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
                 if ($result !== false ) {
                     $tags_map[$tag_key] =[
                         "find_time" => $find_time ,
-                        "gen_time" => time(NULL),
+                        "gen_time" => time(),
                         "result" =>$result,
                     ];
                 }
