@@ -346,7 +346,7 @@ function save_as_el( $file_name,  $class_map, $function_list, $class_inherit_map
             //print_r( $c_f_item );
             $doc=addslashes( $c_f_item[2]);
             $return_type_str=addslashes( $c_f_item[4]);
-            $name=addslashes( $c_f_item[1]);
+            $name= is_string($c_f_item[1]) ? addslashes( $c_f_item[1]) : '';
             $str.="    [\"{$c_f_item[0]}\" \"$name\" \"{$doc}\"  \"{$c_f_item[3]}\"  \"$return_type_str\" \"$class_name_str\" \"{$c_f_item[6]}\"  ]\n";
         }
         $str.=  "  ])\n"  ;
