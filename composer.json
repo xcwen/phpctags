@@ -4,7 +4,7 @@
     "keywords": ["ctags"],
     "type": "library",
     "require": {
-        "php": ">=5.5",
+        "php": ">=7.0",
         "nikic/php-parser": "^4.2"
     },
     "autoload": {
