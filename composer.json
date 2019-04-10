@@ -1,11 +1,11 @@
 {
-    "name": "techlivezheng/phpctags",
+    "name": "xcwen/phpctags",
     "description": "An enhanced php ctags index generator.",
     "keywords": ["ctags"],
     "type": "library",
     "require": {
-        "php": ">=5.3",
-        "nikic/php-parser": "*"
+        "php": ">=7.0",
+        "nikic/php-parser": "^4.2"
     },
     "autoload": {
         "classmap": ["PHPCtags.class.php"]

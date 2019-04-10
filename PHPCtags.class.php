@@ -1,4 +1,7 @@
 <?php
+
+use PhpParser\ParserFactory;
+
 class PHPCtags
 {
     const VERSION = '0.6.0';
@@ -34,7 +37,7 @@ class PHPCtags
 
     public function __construct($options)
     {
-        $this->mParser =  new \PhpParser\Parser\Php7(new \PhpParser\Lexer\Emulative);
+        $this->mParser =  (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
         $this->mOptions = $options;
         $this->filecount = 0;
     }
@@ -212,11 +215,15 @@ class PHPCtags
             if (@$param->byRef == 1 ) {
                 //$ref_str="&";
             }
+            if (!$param->type || !$param->type instanceof \PhpParser\Node\Identifier) {
+                continue;
+            }
+
             if ($param->default ) {
                 $def_str=$this->gen_args_default_str( $param->default );
-                $args_list[]="$ref_str\$".$param->name."=$def_str";
+                $args_list[]="$ref_str\$".$param->type->name."=$def_str";
             }else{
-                $args_list[]="$ref_str\$".$param->name;
+                $args_list[]="$ref_str\$".$param->type->name;
             }
         }
         return join(", " ,$args_list  );
