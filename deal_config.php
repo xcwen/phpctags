@@ -233,6 +233,7 @@ function deal_file_tags( $cache_flag , $cache_file_name , $test_flag, $rebuild_a
             }
             $ctags->cleanFiles();
 
+
             try {
                 $result = $ctags->process_single_file($src_file);
                 if ($result !== false ) {
