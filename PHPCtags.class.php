@@ -292,7 +292,8 @@ class PHPCtags
             }
         } elseif ($node instanceof PHPParser\Node\Stmt\Class_ or  $node instanceof PHPParser\Node\Stmt\Trait_) {
             $kind = 'c';
-            $name = $node->name;
+            //$name = $node->name;
+            $name = $node->name->name;
             $extends = @$node->extends;
             $implements = @$node->implements;
             $line = $node->getLine();
@@ -489,7 +490,8 @@ class PHPCtags
 
 
             $kind = 'f';
-            $name = $node->name;
+            //$name = $node->name;
+            $name = $node->name->name;
             $line = $node->getLine();
 
             $return_type = $this->func_get_return_type($node,$scope);
@@ -500,7 +502,8 @@ class PHPCtags
 
         } elseif ($node instanceof PHPParser\Node\Stmt\Interface_) {
             $kind = 'i';
-            $name = $node->name;
+            //$name = $node->name;
+            $name = $node->name->name;
             $extends = @$node->extends;
 
             $line = $node->getLine();
@@ -512,7 +515,8 @@ class PHPCtags
 
 
             $kind = 't';
-            $name = $node->name;
+            //$name = $node->name;
+            $name = $node->name->name;
             $line = $node->getLine();
             foreach ($node as $subNode) {
                 $this->struct($subNode, FALSE, array('trait' => $name));
@@ -531,7 +535,8 @@ class PHPCtags
             if (isset($node->var->name) && is_string($node->var->name)) {
                 $kind = 'v';
                 $node = $node->var;
-                $name = $node->name;
+                //$name = $node->name;
+                $name = $node->name->name;
                 $line = $node->getLine();
 
                 $return_type="void";
@@ -544,7 +549,8 @@ class PHPCtags
             if (isset($node->var->name) && is_string($node->var->name)) {
                 $kind = 'v';
                 $node = $node->var;
-                $name = $node->name;
+                //$name = $node->name;
+                $name = $node->name->name;
                 $line = $node->getLine();
                 $return_type="void";
                 if ( preg_match( "/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/",$node->getDocComment(), $matches) ){
@@ -554,7 +560,8 @@ class PHPCtags
             }
 
         } elseif ($node instanceof PHPParser\Node\Expr\FuncCall) {
-            switch ($node->name) {
+            $name = $node->name->name;
+            switch ($name) {
                 case 'define':
                     $kind = 'd';
                     $access = "public";
