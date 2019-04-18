@@ -210,20 +210,22 @@ class PHPCtags
     private function get_args( $node ) {
 
         $args_list=[];
+
         foreach ( $node->getParams() as $param ) {
             $ref_str="";
             if (@$param->byRef == 1 ) {
                 //$ref_str="&";
             }
-            if (!$param->type || !$param->type instanceof \PhpParser\Node\Identifier) {
+
+            if (!$param->var  ) {
                 continue;
             }
 
             if ($param->default ) {
                 $def_str=$this->gen_args_default_str( $param->default );
-                $args_list[]="$ref_str\$".$param->type->name."=$def_str";
+                $args_list[]="$ref_str\$".$param->var ->name."=$def_str";
             }else{
-                $args_list[]="$ref_str\$".$param->type->name;
+                $args_list[]="$ref_str\$".$param->var->name;
             }
         }
         return join(", " ,$args_list  );
