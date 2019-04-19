@@ -422,7 +422,7 @@ class PHPCtags
         } elseif ($node instanceof PHPParser\Node\Stmt\ClassConst) {
             $kind = 'd';
             $cons = $node->consts[0];
-            $name = $cons->name;
+            $name = $cons->name->name;
             $line = $cons->getLine();
             $access = "public";
             $return_type="void";
