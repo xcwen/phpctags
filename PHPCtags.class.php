@@ -261,7 +261,11 @@ class PHPCtags
                 $use_name="\\".$use_name;
             }
             if ($node->alias) {
-                $this->mUseConfig[$node->alias->name ]= $use_name ;
+                $this->mUseConfig[$node->alias->name]= $use_name ;
+            }else{
+                // \use think\console\Command; to : Command => \think\console\Command
+                $tmp_arr=preg_split('/\\\\/', $use_name  );
+                $this->mUseConfig[ $tmp_arr[count($tmp_arr)-1] ]= $use_name ;
             }
 
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse ) {
@@ -440,6 +444,7 @@ class PHPCtags
             $return_type=$this->func_get_return_type($node, $scope);
 
             $args=$this->get_args ( $node );
+
 
 
             /*
