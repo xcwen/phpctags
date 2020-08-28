@@ -11,7 +11,8 @@ if (file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
     );
 }
 
-require_once(  __DIR__ . "/" ."./deal_config.php" );
+
+require_once(__DIR__ . "/" ."./deal_config.php");
 
 
 $version = PHPCtags::VERSION;
@@ -94,15 +95,17 @@ EOF;
 $argv_ = array();
 
 foreach ($options as $option => $value) {
-  foreach ($argv as $key => $chunk) {
-    $regex = '/^'. (isset($option[1]) ? '--' : '-') . $option . '/';
-    if ($chunk == $value && $argv[$key-1][0] == '-' || preg_match($regex, $chunk)) {
-      array_push($argv_, $key);
+    foreach ($argv as $key => $chunk) {
+        $regex = '/^'. (isset($option[1]) ? '--' : '-') . $option . '/';
+        if ($chunk == $value && $argv[$key-1][0] == '-' || preg_match($regex, $chunk)) {
+            array_push($argv_, $key);
+        }
     }
-  }
 }
 
-while ($key = array_pop($argv_)) unset($argv[$key]);
+while ($key = array_pop($argv_)) {
+    unset($argv[$key]);
+}
 
 // option -v is an alternative to --verbose
 if (isset($options['V'])) {
@@ -112,14 +115,14 @@ if (isset($options['V'])) {
 
 
 if (isset($options['verbose'])) {
-    if ($options['verbose'] === FALSE || yes_or_no($options['verbose']) == 'yes') {
+    if ($options['verbose'] === false || yes_or_no($options['verbose']) == 'yes') {
         $options['V'] = true;
-    } else if (yes_or_no($options['verbose']) != 'no') {
+    } elseif (yes_or_no($options['verbose']) != 'no') {
         die('phpctags: Invalid value for "verbose" option'.PHP_EOL);
     } else {
         $options['V'] = false;
     }
-}  else {
+} else {
     $options['V'] = false;
 }
 
@@ -170,12 +173,15 @@ if (isset($options['N']) && !isset($options['n'])) {
     $options['excmd'] = 'pattern';
 }
 
-if (!isset($options['excmd']))
+if (!isset($options['excmd'])) {
     $options['excmd'] = 'pattern';
-if (!isset($options['format']))
+}
+if (!isset($options['format'])) {
     $options['format'] = 2;
-if (!isset($options['memory']))
+}
+if (!isset($options['memory'])) {
     $options['memory'] = '1024M';
+}
 if (!isset($options['fields'])) {
     $options['fields'] = array('n', 'k', 's', 'a','i');
 } else {
@@ -192,19 +198,19 @@ if (!isset($options['kinds'])) {
 // handle -u or --sort options
 if (isset($options['sort'])) {
     // --sort or --sort=[Y,y,YES,Yes,yes]
-    if ($options['sort'] === FALSE || yes_or_no($options['sort']) == 'yes') {
+    if ($options['sort'] === false || yes_or_no($options['sort']) == 'yes') {
         $options['sort'] = 'yes';
     // --sort=[N,n,NO,No,no]
-    } else if (yes_or_no($options['sort']) == 'no') {
+    } elseif (yes_or_no($options['sort']) == 'no') {
         $options['sort'] = 'no';
     // --sort=foldcase, case insensitive sorting
-    } else if ($options['sort'] == 'foldcase') {
+    } elseif ($options['sort'] == 'foldcase') {
         $options['sort'] = 'foldcase';
     } else {
         die('phpctags: Invalid value for "sort" option'.PHP_EOL);
     }
 // option -n is equivalent to --sort=no
-} else if (isset($options['u'])) {
+} elseif (isset($options['u'])) {
     $options['sort'] = 'no';
 // sort the result by default
 } else {
@@ -220,17 +226,17 @@ if (isset($options['memory'])) {
 }
 
 if (isset($options['append'])) {
-    if ($options['append'] === FALSE || yes_or_no($options['append']) == 'yes') {
-        $options['a'] = FALSE;
-    } else if (yes_or_no($options['append']) != 'no') {
+    if ($options['append'] === false || yes_or_no($options['append']) == 'yes') {
+        $options['a'] = false;
+    } elseif (yes_or_no($options['append']) != 'no') {
         die('phpctags: Invalid value for "append" option'.PHP_EOL);
     }
 }
 
 if (isset($options['recurse'])) {
-    if ($options['recurse'] === FALSE || yes_or_no($options['recurse']) == 'yes') {
-        $options['R'] = FALSE;
-    } else if (yes_or_no($options['recurse']) != 'no') {
+    if ($options['recurse'] === false || yes_or_no($options['recurse']) == 'yes') {
+        $options['R'] = false;
+    } elseif (yes_or_no($options['recurse']) != 'no') {
         die('phpctags: Invalid value for "recurse" option'.PHP_EOL);
     }
 }
@@ -245,29 +251,27 @@ if (isset($options['R']) && empty($argv)) {
 
 try {
     if ($options["config-file"]) {
-
-        deal_config($options["config-file"],
-                    yes_or_no($options['rebuild']) == 'yes' ,
-                    yes_or_no($options['realpath_flag']) == 'yes' ,
-                    $options["tags_dir"],
-                    yes_or_no(@$options['test']) == 'yes' 
+        deal_config(
+            $options["config-file"],
+            yes_or_no($options['rebuild']) == 'yes',
+            yes_or_no($options['realpath_flag']) == 'yes',
+            $options["tags_dir"],
+            yes_or_no(@$options['test']) == 'yes'
         );
 
         exit;
-    }else{
+    } else {
         $ctags = new PHPCtags($options);
-        $ctags->addFiles($argv );
+        $ctags->addFiles($argv);
         $result = $ctags->export();
     }
-
-
 } catch (Exception $e) {
 }
 // write to a specified file
 if (isset($options['f']) && $options['f'] !== '-') {
     $tagfile = fopen($options['f'], isset($options['a']) ? 'a' : 'w');
 // write to stdout only when instructed
-} else if (isset($options['f']) && $options['f'] === '-') {
+} elseif (isset($options['f']) && $options['f'] === '-') {
     $tagfile = fopen('php://stdout', 'w');
 // write to file 'tags' by default
 } else {
@@ -277,7 +281,7 @@ if (isset($options['f']) && $options['f'] !== '-') {
 $mode = ($options['sort'] == 'yes' ? 1 : ($options['sort'] == 'foldcase' ? 2 : 0));
 
 if (!isset($options['a'])) {
-$tagline = <<<EOF
+    $tagline = <<<EOF
 !_TAG_FILE_FORMAT\t2\t/extended format; --format=1 will not append ;" to lines/
 !_TAG_FILE_SORTED\t{$mode}\t/0=unsorted, 1=sorted, 2=foldcase/
 !_TAG_PROGRAM_AUTHOR\ttechlivezheng\t/techlivezheng@gmail.com/
@@ -290,17 +294,19 @@ EOF;
 $ret=fwrite($tagfile, $result);
 fclose($tagfile);
 
-function yes_or_no($arg) {
+function yes_or_no($arg)
+{
     if (preg_match('/\b[Y|y]([E|e][S|s])?\b/', $arg)) {
         return 'yes';
-    } else if (preg_match('/\b[N|n]([O|o])?\b/', $arg)) {
+    } elseif (preg_match('/\b[N|n]([O|o])?\b/', $arg)) {
         return 'no';
     } else {
         return false;
     }
 }
 
-function isMemoryLimitValid($memory_limit) {
+function isMemoryLimitValid($memory_limit)
+{
     if ($memory_limit == "-1") {
         // no memory limit
         return true;
