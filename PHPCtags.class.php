@@ -671,7 +671,8 @@ class PHPCtags
                     // c_* stuffs are class related scope variables
                     // current > method > class > namespace
                     $c_scope = array_pop($scope);
-                    list($c_type, $c_name) = [key($c_scope), current($c_scope)];
+                    //list($c_type, $c_name) = [key($c_scope), current($c_scope)];
+                    $c_name= current($c_scope);
                     $n_scope = array_pop($scope);
                     if (!empty($n_scope)) {
                         list($n_type, $n_name) = [key($n_scope), current($n_scope)];
@@ -702,7 +703,7 @@ class PHPCtagsException extends Exception
 
 class ReadableRecursiveDirectoryIterator extends RecursiveDirectoryIterator
 {
-    function getChildren()
+    public function getChildren()
     {
         try {
             return new ReadableRecursiveDirectoryIterator($this->getPathname());
