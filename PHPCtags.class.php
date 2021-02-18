@@ -157,6 +157,8 @@ class PHPCtags
 
         if ($node->returnType instanceof PhpParser\Node\NullableType) {
             $return_type="". $node->returnType->type ;
+        } elseif ($node->returnType instanceof PhpParser\Node\UnionType) {
+            $return_type="". $node->returnType->types[0] ;
         } else {
             $return_type="". $node->returnType;
         }
