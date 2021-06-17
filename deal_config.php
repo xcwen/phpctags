@@ -1,4 +1,5 @@
 <?php
+require_once(__DIR__. "/GitIgnore/Ruleset.php");
 
 function get_config($config_file)
 {
@@ -16,7 +17,7 @@ function get_config($config_file)
                 "php-path-list"=> [
                     "."
                 ],
-                "php-path-list-without-subdir"=> []
+                "php-path-list-without-subdir"=> [],
             ]
         ], JSON_PRETTY_PRINT);
         file_put_contents($config_file, $json_data);
@@ -149,7 +150,7 @@ function normalizePath($path)
     return implode('/', $parts);
 }
 
-function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent)
+function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent, $ignore_ruleset)
 {
     //得到要处理的文件
     $file_list=[];
@@ -195,6 +196,24 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         }
         get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, false);
     }
+    $cur_work_dir_len=strlen($cur_work_dir);
+
+    $ret_file_list =[];
+    foreach ($file_list as $file) {
+        if (substr($file, 0, $cur_work_dir_len)== $cur_work_dir) {
+
+            /**  @var Ruleset  $ignore_ruleset */
+            $check_path= substr($file, $cur_work_dir_len+1);
+            //echo "check : $file, $check_path\n";
+            if (!$ignore_ruleset->match($check_path)) {
+                $ret_file_list[]=$file;
+            } else {
+                echo "filter-ignore:$file\n";
+            }
+        }
+    }
+    $file_list=$ret_file_list;
+
 
     $deal_all_count=count($file_list)-$cache_file_count;
 
@@ -316,7 +335,13 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
     //$can_use_external_dir         = @$filter["can-use-external-dir"];
     $php_path_list                = $filter ["php-path-list"];
     $php_file_ext_list            = $filter ["php-file-ext-list"];
-    $php_path_list_without_subdir = $filter ["php-path-list-without-subdir"];
+    $php_path_list_without_subdir = isset($filter ["php-path-list-without-subdir"])? $filter ["php-path-list-without-subdir"]:[];
+    $ignore_ruleset_list = isset($filter ["ignore-ruleset"])?$filter ["ignore-ruleset"]:[
+        "/vendor/**/[tT]ests/**/*.php"
+    ];
+
+    $ignore_ruleset=Ruleset::loadFromStrings($ignore_ruleset_list);
+    print_r($ignore_ruleset);
     //echo "realpath_flag :$realpath_flag \n";
 
 
@@ -327,11 +352,11 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
     if (!file_exists($cache_file_name)  || $rebuild_all_flag) {
         $cache_flag=true;
         $max_percent=50;
-        deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent);
+        deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent, $ignore_ruleset);
         $start_pecent=50;
     }
     $cache_flag=false;
-    deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent);
+    deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent, $ignore_ruleset);
 }
 function save_as_el($file_name, $class_map, $function_list, $class_inherit_map, $file_list)
 {
@@ -440,9 +465,11 @@ function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $r
                         continue;
                     }
                 } else { //vendor 里 test ,tests 目录不处理
+                    /*
                     if (in_array(strtolower($file), ["test", "tests" ]) !==false) {
                         continue;
                     }
+                    */
                 }
 
                 get_filter_file_list($cache_flag, $file_list, $dir."/$file", $file_ext_list, $reduce_flag);

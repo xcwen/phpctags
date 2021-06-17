@@ -561,7 +561,7 @@ class PHPCtags
                 }
             }
         } elseif ($node instanceof PHPParser\Node\Expr\FuncCall) {
-            $name = $node->name->name;
+            $name = @$node->name->name;
             switch ($name) {
                 case 'define':
                     $kind = 'd';

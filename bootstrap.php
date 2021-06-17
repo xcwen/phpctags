@@ -250,6 +250,7 @@ if (isset($options['R']) && empty($argv)) {
 //
 
 try {
+    //print_r($options);
     if ($options["config-file"]) {
         deal_config(
             $options["config-file"],
@@ -266,6 +267,9 @@ try {
         $result = $ctags->export();
     }
 } catch (Exception $e) {
+    echo $e->getMessage();
+
+    exit;
 }
 // write to a specified file
 if (isset($options['f']) && $options['f'] !== '-') {
