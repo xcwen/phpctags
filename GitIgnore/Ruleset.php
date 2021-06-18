@@ -7,6 +7,7 @@ require_once(__DIR__ . "/Rule.php");
 class Ruleset
 {
     protected $rules=[];
+    public $check_start_pos=0;
 
     public function addRule($rule)
     {
@@ -31,6 +32,10 @@ class Ruleset
 
     public function match($path)
     {
+        $path=substr($path, $this->check_start_pos);
+        if ($path===false) {
+            return null;
+        }
         if (!is_string($path)) {
             throw new Exception(__METHOD__." expects a string; given ".Util::describe($path));
         }

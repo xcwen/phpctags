@@ -52,9 +52,9 @@ class Pattern
             throw new Exception("Zero-length pattern string passed to ".__METHOD__);
         }
         if ($pattern[0] == '/') {
-            $r = '#^'.substr($r, 1).'(?:$|/)#';
+            $r = '#^'.substr($r, 1).'.*#';
         } else {
-            $r = '#(?:^|/)'.$r.'(?:$|/)#';
+            $r = '#(?:^|/)'.$r.'.*#';
         }
         return new self($pattern, $r);
     }

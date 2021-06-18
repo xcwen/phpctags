@@ -178,6 +178,7 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         $file_list= $json_data[3];//原先的文件列表
     }
     $cache_file_count=count($file_list);
+    /**  @var Ruleset  $ignore_ruleset */
 
     foreach ($php_path_list as $dir) {
         if ($realpath_flag) {
@@ -185,7 +186,7 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         } else {
             $dir=  get_path($cur_work_dir, $dir);
         }
-        get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, true);
+        get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, true, $ignore_ruleset);
     }
 
     foreach ($php_path_list_without_subdir as $dir) {
@@ -194,22 +195,15 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         } else {
             $dir=  get_path($cur_work_dir, $dir);
         }
-        get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, false);
+        get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, false, $ignore_ruleset);
     }
-    $cur_work_dir_len=strlen($cur_work_dir);
 
     $ret_file_list =[];
     foreach ($file_list as $file) {
-        if (substr($file, 0, $cur_work_dir_len)== $cur_work_dir) {
-
-            /**  @var Ruleset  $ignore_ruleset */
-            $check_path= substr($file, $cur_work_dir_len+1);
-            //echo "check : $file, $check_path\n";
-            if (!$ignore_ruleset->match($check_path)) {
-                $ret_file_list[]=$file;
-            } else {
-                echo "filter-ignore:$file\n";
-            }
+        if (!$ignore_ruleset->match($file)) {
+            $ret_file_list[]=$file;
+        } else {
+            echo "filter-ignore:$file\n";
         }
     }
     $file_list=$ret_file_list;
@@ -341,6 +335,9 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
     ];
 
     $ignore_ruleset=Ruleset::loadFromStrings($ignore_ruleset_list);
+    $cur_work_dir_len=strlen($cur_work_dir);
+    $ignore_ruleset->check_start_pos=$cur_work_dir_len+1;
+
     print_r($ignore_ruleset);
     //echo "realpath_flag :$realpath_flag \n";
 
@@ -446,7 +443,7 @@ function construct_map_to_function_list(&$class_map, &$construct_map, &$class_in
     }
 }
 
-function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $reduce_flag)
+function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $reduce_flag, $ignore_ruleset)
 {
     //vendor 里都是需要缓存的
     if (!$cache_flag) {  //
@@ -459,7 +456,8 @@ function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $r
     $dir_list=scandir($dir);
     foreach ($dir_list as $file) {
         if ($file[0]!='.') {
-            if (is_dir($dir.'/'.$file) && $reduce_flag) {
+            $sub_file=$dir.'/'.$file;
+            if (is_dir($sub_file) && $reduce_flag) {
                 if (!$cache_flag) {  //
                     if ($file=="vendor") {
                         continue;
@@ -472,7 +470,13 @@ function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $r
                     */
                 }
 
-                get_filter_file_list($cache_flag, $file_list, $dir."/$file", $file_ext_list, $reduce_flag);
+                /**  @var Ruleset  $ignore_ruleset */
+
+                if (!$ignore_ruleset->match($sub_file."/")) {
+                    get_filter_file_list($cache_flag, $file_list, $sub_file, $file_ext_list, $reduce_flag, $ignore_ruleset);
+                } else {
+                    echo "filter-ignore-dir:$sub_file\n";
+                }
             } else {
                 $file_path = pathinfo($file);
                 if (in_array(@$file_path['extension'], $file_ext_list)) {
