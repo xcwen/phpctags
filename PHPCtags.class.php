@@ -144,7 +144,12 @@ class PHPCtags
                 if (isset($this->mUseConfig[$pack_name])) {
                     return $this->mUseConfig[$pack_name] ;
                 } else {
-                    return $className;
+                    $namespace= $this-> get_key_in_scope($scope, "namespace");
+                    if ($namespace) {
+                        return  "\\$namespace\\$className";
+                    } else {
+                        return  "\\$className";
+                    }
                 }
             }
         } else {
