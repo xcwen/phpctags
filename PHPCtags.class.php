@@ -14,6 +14,7 @@ class PHPCtags
     private static $mKinds = array(
         't' => 'trait',
         'c' => 'class',
+        'e' => 'enum',
         'm' => 'method',
         'f' => 'function',
         'p' => 'property',
@@ -264,6 +265,7 @@ class PHPCtags
         $static =false;
         $return_type="";
         $implements = array();
+        $inherits=[];
         $args="";
 
 
@@ -309,9 +311,15 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Class_ or  $node instanceof PHPParser\Node\Stmt\Trait_) {
+        } elseif ($node instanceof PHPParser\Node\Stmt\Class_
+                  or  $node instanceof PHPParser\Node\Stmt\Trait_
+                  or $node instanceof PHPParser\Node\Stmt\Enum_
+        ) {
             $kind = 'c';
             //$name = $node->name;
+            if ( $node instanceof PHPParser\Node\Stmt\Enum_) {
+                $inherits[]="enum_";
+            }
             $name = $node->name->name;
             $extends = @$node->extends;
             $implements = @$node->implements;
@@ -443,7 +451,8 @@ class PHPCtags
             }
 
             $access = $this->getNodeAccess($node);
-        } elseif ($node instanceof PHPParser\Node\Stmt\ClassConst) {
+        } elseif ($node instanceof PHPParser\Node\Stmt\ClassConst
+        ) {
             $kind = 'd';
             $cons = $node->consts[0];
             $name = $cons->name->name;
@@ -454,6 +463,16 @@ class PHPCtags
                 $return_type=$this->getRealClassName($matches[1], $scope);
             }
             $args="class";
+        } elseif ($node instanceof PHPParser\Node\Stmt\EnumCase) {
+
+            $kind = 'p';
+            $name = $node->name->name;
+            $line = $node->getLine();
+            $access = "public";
+            $static = 1;
+            $return_type= $this-> getRealClassName('static',$scope );
+            $args="enum";
+
         } elseif ($node instanceof PHPParser\Node\Stmt\ClassMethod) {
             $kind = 'm';
             $name = $node->name->name;
@@ -480,6 +499,9 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
+
+
+
         } elseif ($node instanceof PHPParser\Node\Stmt\Const_) {
             $kind = 'd';
             $access = "public";
@@ -600,7 +622,7 @@ class PHPCtags
             if ($return_type) {
                 $item["type"]= $return_type;
             }
-            $inherits= $this->get_inherits($extends, $implements, $scope);
+            $inherits= array_merge($this->get_inherits($extends, $implements, $scope), $inherits );
             if (!empty($inherits)) {
                 $item["inherits"]= $inherits;
             }
