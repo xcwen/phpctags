@@ -10,6 +10,8 @@ php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json 
 
 # 3: 在空项目中生成 tags.el
 /*
+mkdir /home/jim/test && cp ./ac-php-conf.json  /home/jim/test/.ac-php-conf.json
+
 php ./bootstrap.php --config-file=/home/jim/test/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes
 */
 # 4 : 复制
