@@ -100,7 +100,9 @@ function deal_tags($file_index, &$result, &$class_inherit_map, &$class_map, &$fu
                     $class_map[$class_name][] =[
                         $kind , $name, $doc , $file_pos , $return_type,$class_name  , $access, "" ];
                 } else {
-                    // print_r($name);
+                    if (is_array($name) && isset($name['name'])) {
+                        $name = $name['name'];
+                    }
                     $define_name=$scope."\\".$name;
                     $function_list[ ]= [ $kind , $define_name, $doc , $file_pos , $return_type ] ;
                 }
@@ -187,7 +189,15 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         } else {
             $dir=  get_path($cur_work_dir, $dir);
         }
+        if (strpos($dir, $cur_work_dir) !== 0) {
+            $dir_len=strlen($dir);
+            $ignore_ruleset->check_start_pos=$dir_len+1;
+        }
         get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, true, $ignore_ruleset);
+        if (strpos($dir, $cur_work_dir) !== 0) {
+            $cur_work_dir_len=strlen($cur_work_dir);
+            $ignore_ruleset->check_start_pos=$cur_work_dir_len+1;
+        }
     }
 
     foreach ($php_path_list_without_subdir as $dir) {
@@ -196,12 +206,21 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         } else {
             $dir=  get_path($cur_work_dir, $dir);
         }
+        if (strpos($dir, $cur_work_dir) !== 0) {
+            $dir_len=strlen($dir);
+            $ignore_ruleset->check_start_pos=$dir_len+1;
+        }
+
         get_filter_file_list($cache_flag, $file_list, $dir, $php_file_ext_list, false, $ignore_ruleset);
+        if (strpos($dir, $cur_work_dir) !== 0) {
+            $cur_work_dir_len=strlen($cur_work_dir);
+            $ignore_ruleset->check_start_pos=$cur_work_dir_len+1;
+        }
     }
 
     $ret_file_list =[];
     foreach ($file_list as $file) {
-        if (!$ignore_ruleset->match($file)) {
+        if (strpos($file, $cur_work_dir) !== 0 || !$ignore_ruleset->match($file)) {
             $ret_file_list[]=$file;
         } else {
             echo "filter-ignore:$file\n";
