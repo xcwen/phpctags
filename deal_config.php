@@ -100,6 +100,7 @@ function deal_tags($file_index, &$result, &$class_inherit_map, &$class_map, &$fu
                     $class_map[$class_name][] =[
                         $kind , $name, $doc , $file_pos , $return_type,$class_name  , $access, "" ];
                 } else {
+                    // print_r($name);
                     $define_name=$scope."\\".$name;
                     $function_list[ ]= [ $kind , $define_name, $doc , $file_pos , $return_type ] ;
                 }

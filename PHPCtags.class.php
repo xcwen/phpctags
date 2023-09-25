@@ -134,6 +134,11 @@ class PHPCtags
         }
 
         if ($className[0] != "\\") {
+            //系统本身类型
+            if (in_array($className, ["string", "mixed", "int", "float", "double"])) {
+                return $className;
+            }
+
             $ret_arr=explode("\\", $className, 2);
             $pack_name=$ret_arr[0];
             if (count($ret_arr)==2) {
@@ -318,7 +323,7 @@ class PHPCtags
         ) {
             $kind = 'c';
             //$name = $node->name;
-            if ( $node instanceof PHPParser\Node\Stmt\Enum_) {
+            if ($node instanceof PHPParser\Node\Stmt\Enum_) {
                 $inherits[]="enum_";
             }
             $name = $node->name->name;
@@ -339,7 +344,7 @@ class PHPCtags
                         "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
                         $line_str,
                         $matches
-                    ) ) {
+                    )) {
                         $field_name=$matches[2];
                         $field_return_type= $this->getRealClassName($matches[1], $filed_scope);
                         $structs[] = array(
@@ -355,7 +360,7 @@ class PHPCtags
                         "/@method[ \t]+(static[ \t]+)*([^\\(]+)[ \t]+([a-zA-Z0-9_]+)[ \t]*\\((.*)\\)/",
                         $line_str,
                         $matches
-                    ) ) {
+                    )) {
                         //* @method static string imageUrl($width = 640, $height = 480, $category = null, $randomize = true)
                         $static_flag=($matches[1]!="");
                         $field_name=$matches[3];
@@ -420,7 +425,7 @@ class PHPCtags
                                     "/@var[ \t]+([a-zA-Z0-9_]+)[ \t]+\\$([a-zA-Z0-9_\\\\]+)/",
                                     $comment->getText(),
                                     $matches
-                                ) ) {
+                                )) {
                                     $field_name=$matches[2];
                                     $field_return_type= $this->getRealClassName($matches[1], $filed_scope);
                                     $structs[] = array(
@@ -465,15 +470,13 @@ class PHPCtags
             }
             $args="class";
         } elseif ($node instanceof PHPParser\Node\Stmt\EnumCase) {
-
             $kind = 'p';
             $name = $node->name->name;
             $line = $node->getLine();
             $access = "public";
             $static = 1;
-            $return_type= $this-> getRealClassName('static',$scope );
+            $return_type= $this-> getRealClassName('static', $scope);
             $args="enum";
-
         } elseif ($node instanceof PHPParser\Node\Stmt\ClassMethod) {
             $kind = 'm';
             $name = $node->name->name;
@@ -485,6 +488,43 @@ class PHPCtags
 
             $args=$this->get_args($node);
 
+
+
+            if ($name=="__construct") {
+                $filed_scope=$scope;
+                // array_push($filed_scope, array('class' => $name ));
+                foreach ($node->getParams() as $param) {
+                    /** @var \PhpParser\Node\Param $param*/
+
+                    if (!$param->var) {
+                        continue;
+                    }
+                    $flags=$param->flags;
+                    if ($flags==0) { //public
+                        continue;
+                    }
+
+                    $field_access="public";
+                    if ($flags==2) { //
+                        $field_access="protected";
+                    } elseif ($flags==4) {
+                        $field_access="private";
+                    }
+
+
+                    $field_name=$param->var->name;
+                    $field_return_type= $this->getRealClassName($param->type->toString(), $filed_scope);
+                    $structs[] = array(
+                        //'file' => $this->mFile,
+                        'kind' => "p",
+                        'name' => $field_name,
+                        'line' =>  $param->getLine()  ,
+                        'scope' => $this->get_scope($filed_scope) ,
+                        'access' => $field_access,
+                        'type' => $field_return_type,
+                    );
+                }
+            }
 
 
             /*
@@ -500,9 +540,6 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-
-
-
         } elseif ($node instanceof PHPParser\Node\Stmt\Const_) {
             $kind = 'd';
             $access = "public";
@@ -623,7 +660,7 @@ class PHPCtags
             if ($return_type) {
                 $item["type"]= $return_type;
             }
-            $inherits= array_merge($this->get_inherits($extends, $implements, $scope), $inherits );
+            $inherits= array_merge($this->get_inherits($extends, $implements, $scope), $inherits);
             if (!empty($inherits)) {
                 $item["inherits"]= $inherits;
             }
