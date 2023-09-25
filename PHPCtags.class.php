@@ -513,7 +513,11 @@ class PHPCtags
 
 
                     $field_name=$param->var->name;
-                    $field_return_type= $this->getRealClassName($param->type->toString(), $filed_scope);
+
+                    $field_return_type="mixed";
+                    if ($param->type) {
+                        $field_return_type= $this->getRealClassName($param->type->toString(), $filed_scope);
+                    }
                     $structs[] = array(
                         //'file' => $this->mFile,
                         'kind' => "p",
