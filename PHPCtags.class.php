@@ -171,6 +171,9 @@ class PHPCtags
             $return_type="". $node->returnType->type ;
         } elseif ($node->returnType instanceof PhpParser\Node\UnionType) {
             $return_type="". $node->returnType->types[0] ;
+        } elseif ($node->returnType instanceof PhpParser\Node) {
+            $return_type="". $node->returnType->getType() ;
+
         } else {
             $return_type="". $node->returnType;
         }
@@ -516,11 +519,7 @@ class PHPCtags
 
                     $field_return_type="mixed";
                     if ($param->type) {
-                        try {
-                            $field_return_type= $this->getRealClassName($param->type->toString(), $filed_scope);
-                        } catch (\Throwable $t) {
-                        }
-
+                        $field_return_type= $this->getRealClassName($param->type->getType(), $filed_scope);
                     }
                     $structs[] = array(
                         //'file' => $this->mFile,
