@@ -172,7 +172,8 @@ class PHPCtags
         } elseif ($node->returnType instanceof PhpParser\Node\UnionType) {
             $return_type="". $node->returnType->types[0] ;
         } elseif ($node->returnType instanceof PhpParser\Node) {
-            $return_type="". $node->returnType->getType();
+            $return_type="". $node->returnType->getType() ;
+
         } else {
             $return_type="". $node->returnType;
         }
