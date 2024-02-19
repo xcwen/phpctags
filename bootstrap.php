@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL ^ E_DEPRECATED);
 if (file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
     require($autoload);
 } elseif (file_exists($autoload = __DIR__ . '/../../autoload.php')) {
@@ -200,19 +201,19 @@ if (isset($options['sort'])) {
     // --sort or --sort=[Y,y,YES,Yes,yes]
     if ($options['sort'] === false || yes_or_no($options['sort']) == 'yes') {
         $options['sort'] = 'yes';
-    // --sort=[N,n,NO,No,no]
+        // --sort=[N,n,NO,No,no]
     } elseif (yes_or_no($options['sort']) == 'no') {
         $options['sort'] = 'no';
-    // --sort=foldcase, case insensitive sorting
+        // --sort=foldcase, case insensitive sorting
     } elseif ($options['sort'] == 'foldcase') {
         $options['sort'] = 'foldcase';
     } else {
         die('phpctags: Invalid value for "sort" option'.PHP_EOL);
     }
-// option -n is equivalent to --sort=no
+    // option -n is equivalent to --sort=no
 } elseif (isset($options['u'])) {
     $options['sort'] = 'no';
-// sort the result by default
+    // sort the result by default
 } else {
     $options['sort'] = 'yes';
 }
@@ -274,10 +275,10 @@ try {
 // write to a specified file
 if (isset($options['f']) && $options['f'] !== '-') {
     $tagfile = fopen($options['f'], isset($options['a']) ? 'a' : 'w');
-// write to stdout only when instructed
+    // write to stdout only when instructed
 } elseif (isset($options['f']) && $options['f'] === '-') {
     $tagfile = fopen('php://stdout', 'w');
-// write to file 'tags' by default
+    // write to file 'tags' by default
 } else {
     $tagfile = fopen('tags', isset($options['a']) ? 'a' : 'w');
 }
