@@ -1,5 +1,5 @@
 <?php
-error_reporting(E_ALL ^ E_DEPRECATED);
+error_reporting(E_ERROR | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR | E_PARSE);
 if (file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
     require($autoload);
 } elseif (file_exists($autoload = __DIR__ . '/../../autoload.php')) {
@@ -292,7 +292,7 @@ if (!isset($options['a'])) {
 !_TAG_PROGRAM_AUTHOR\ttechlivezheng\t/techlivezheng@gmail.com/
 !_TAG_PROGRAM_NAME\tphpctags\t//
 !_TAG_PROGRAM_URL\thttps://github.com/techlivezheng/phpctags\t/official site/
-!_TAG_PROGRAM_VERSION\t${version}\t//\n
+!_TAG_PROGRAM_VERSION\t{$version}\t//\n
 EOF;
 }
 
