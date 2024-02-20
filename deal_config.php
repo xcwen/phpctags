@@ -385,8 +385,8 @@ function save_as_el($file_name, $class_map, $function_list, $class_inherit_map, 
         $str.=  "  (\"". $class_name_str  ."\".[\n"   ;
         foreach ($c_field_list as &$c_f_item) {
             //print_r( $c_f_item );
-            $doc=addslashes($c_f_item[2]);
-            $return_type_str=addslashes($c_f_item[4]);
+            $doc=addslashes($c_f_item[2]??"");
+            $return_type_str=addslashes($c_f_item[4]??"");
             $name= is_string($c_f_item[1]) ? addslashes($c_f_item[1]) : '';
             $str.="    [\"{$c_f_item[0]}\" \"$name\" \"{$doc}\"  \"{$c_f_item[3]}\"  \"$return_type_str\" \"$class_name_str\" \"{$c_f_item[6]}\" \"{$c_f_item[7]}\" ]\n";
         }
@@ -398,9 +398,9 @@ function save_as_el($file_name, $class_map, $function_list, $class_inherit_map, 
 
     //[ $kind , $define_name, $doc , $file_pos , $return_type ] ;
     foreach ($function_list as &$f_item) {
-        $doc=addslashes($f_item[2]);
-        $function_name_str=addslashes($f_item[1]);
-        $return_type_str=addslashes($f_item[4]);
+        $doc=addslashes($f_item[2]??"");
+        $function_name_str=addslashes($f_item[1]??"");
+        $return_type_str=addslashes($f_item[4]??"");
         $str.="  [\"{$f_item[0]}\" \"$function_name_str\" \"{$doc}\"  \"{$f_item[3]}\"  \"$return_type_str\"  ]\n";
     }
     $str.="]\n";

@@ -180,7 +180,7 @@ class PHPCtags
 
 
         if (!$return_type) {
-            if (preg_match("/@return[ \t]+([\$a-zA-Z0-9_\\\\]+)/", $node->getDocComment(), $matches)) {
+            if (preg_match("/@return[ \t]+([\$a-zA-Z0-9_\\\\]+)/", $node->getDocComment()??"", $matches)) {
                 $return_type= $matches[1];
             }
         }
@@ -455,7 +455,7 @@ class PHPCtags
 
             $static=$node->isStatic();
             $line = $prop->getLine();
-            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment(), $matches)) {
+            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
                 $return_type=$this->getRealClassName($matches[1], $scope);
             }
 
@@ -468,7 +468,7 @@ class PHPCtags
             $line = $cons->getLine();
             $access = "public";
             $return_type="void";
-            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment(), $matches)) {
+            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
                 $return_type=$this->getRealClassName($matches[1], $scope);
             }
             $args="class";
@@ -555,7 +555,7 @@ class PHPCtags
             $line = $node->getLine();
 
             $return_type="void";
-            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment(), $matches)) {
+            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
                 $return_type=$this->getRealClassName($matches[1], $scope);
             }
 
@@ -777,6 +777,7 @@ class PHPCtagsException extends Exception
 
 class ReadableRecursiveDirectoryIterator extends RecursiveDirectoryIterator
 {
+    #[\ReturnTypeWillChange]
     public function getChildren()
     {
         try {
