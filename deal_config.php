@@ -366,8 +366,23 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
 
     $start_pecent=0;
     $max_percent=100;
-    if (!file_exists($cache_file_name)  || $rebuild_all_flag) {
+    $composer_lock_file="$cur_work_dir/composer.lock";
+    $cache_flag=false;
+    if (!file_exists($cache_file_name) || $rebuild_all_flag) {
         $cache_flag=true;
+    }
+    if (!$cache_flag) {
+        if (is_readable($composer_lock_file) && is_readable($cache_file_name)) {
+            if (filemtime($composer_lock_file) > filemtime($cache_file_name)) {
+                echo "check_time:". filemtime($composer_lock_file) ." :". filemtime($cache_file_name) . "\n";
+                //user update composer , need rebuild
+                $cache_flag=true;
+            }
+        }
+    }
+
+
+    if ($cache_flag) {
         $max_percent=50;
         deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_flag, $cur_work_dir, $obj_dir, $realpath_flag, $php_path_list, $php_path_list_without_subdir, $php_file_ext_list, $start_pecent, $max_percent, $ignore_ruleset);
         $start_pecent=50;
@@ -483,7 +498,7 @@ function get_filter_file_list($cache_flag, &$file_list, $dir, $file_ext_list, $r
                         continue;
                     }
                 } else { //vendor 里 test ,tests 目录不处理
-                    /*
+                    /**
                     if (in_array(strtolower($file), ["test", "tests" ]) !==false) {
                         continue;
                     }
