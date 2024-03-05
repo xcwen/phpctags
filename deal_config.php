@@ -371,13 +371,12 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
     if (!file_exists($cache_file_name) || $rebuild_all_flag) {
         $cache_flag=true;
     }
-    if (!$cache_flag) {
-        if (is_readable($composer_lock_file) && is_readable($cache_file_name)) {
-            if (filemtime($composer_lock_file) > filemtime($cache_file_name)) {
-                echo "check_time:". filemtime($composer_lock_file) ." :". filemtime($cache_file_name) . "\n";
-                //user update composer , need rebuild
-                $cache_flag=true;
-            }
+    if (is_readable($composer_lock_file) && is_readable($cache_file_name)) {
+        if (filemtime($composer_lock_file) > filemtime($cache_file_name)) {
+            //echo "check_time:". filemtime($composer_lock_file) ." :". filemtime($cache_file_name) . "\n";
+            //user update composer , need rebuild
+            $cache_flag=true;
+            $rebuild_all_flag=true;
         }
     }
 

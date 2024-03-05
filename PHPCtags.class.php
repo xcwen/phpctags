@@ -8,6 +8,8 @@ class PHPCtags
 
     private $mFile;
 
+    public \TTs\Test $test;
+
     private $mFiles;
     private $mFileLines ;
 
@@ -173,7 +175,6 @@ class PHPCtags
             $return_type="". $node->returnType->types[0] ;
         } elseif ($node->returnType instanceof PhpParser\Node) {
             $return_type="". $node->returnType->getType() ;
-
         } else {
             $return_type="". $node->returnType;
         }
@@ -344,7 +345,7 @@ class PHPCtags
                 $arr=explode("\n", ($doc_item->__toString()));
                 foreach ($arr as $line_num => $line_str) {
                     if (preg_match(
-                        "/@property[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
+                        "/@property(?:|-write|-read)[ \t]+([a-zA-Z0-9_\\\\]+)[ \t]+\\$?([a-zA-Z0-9_]+)/",
                         $line_str,
                         $matches
                     )) {
@@ -452,11 +453,19 @@ class PHPCtags
 
             $prop = $node->props[0];
             $name = $prop->name->name;
+            $return_type="";
+            if ($node->type) {
+                print_r($node);
+                $return_type= "\\".$node->type;
+            }
 
             $static=$node->isStatic();
             $line = $prop->getLine();
-            if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
-                $return_type=$this->getRealClassName($matches[1], $scope);
+            echo "return_type: " . $return_type ."\n" ;
+            if (!$return_type) {
+                if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
+                    $return_type=$this->getRealClassName($matches[1], $scope);
+                }
             }
 
             $access = $this->getNodeAccess($node);
@@ -536,7 +545,7 @@ class PHPCtags
 
             /*
             foreach ($node as $subNode) {
-                $this->struct($subNode, FALSE, array('method' => $name));
+            $this->struct($subNode, FALSE, array('method' => $name));
             }
             */
         } elseif ($node instanceof PHPParser\Node\Stmt\If_) {
@@ -568,7 +577,7 @@ class PHPCtags
         } elseif ($node instanceof PHPParser\Node\Stmt\TryCatch) {
             /*
             foreach ($node as $subNode) {
-                $this->struct($subNode);
+            $this->struct($subNode);
             }
             */
         } elseif ($node instanceof PHPParser\Node\Stmt\Function_) {
