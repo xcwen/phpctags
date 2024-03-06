@@ -454,8 +454,9 @@ class PHPCtags
             $prop = $node->props[0];
             $name = $prop->name->name;
             $return_type="";
-            if ($node->type) {
-                print_r($node);
+            if ($node->type && (
+                (is_object($node->type) && method_exists($node->type, '__toString'))
+            )) {
                 $return_type= "\\".$node->type;
             }
 
