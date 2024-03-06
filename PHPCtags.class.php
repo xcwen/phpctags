@@ -454,15 +454,18 @@ class PHPCtags
             $prop = $node->props[0];
             $name = $prop->name->name;
             $return_type="";
-            if ($node->type && (
-                (is_object($node->type) && method_exists($node->type, '__toString'))
-            )) {
-                $return_type= "\\".$node->type;
+            if ($node->type && is_object($node->type)) {
+                if (method_exists($node->type, '__toString')) {
+                    $return_type="". $node->type;
+                }
+                if ($node->type instanceof PHPParser\Node\Name\FullyQualified) {
+                    $return_type= "\\".$return_type;
+                }
             }
 
             $static=$node->isStatic();
             $line = $prop->getLine();
-            echo "return_type: " . $return_type ."\n" ;
+            // echo "return_type: " . $return_type ."\n" ;
             if (!$return_type) {
                 if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
                     $return_type=$this->getRealClassName($matches[1], $scope);
@@ -773,28 +776,6 @@ class PHPCtags
             }
         } else {
             return null;
-        }
-    }
-}
-
-class PHPCtagsException extends Exception
-{
-    public function __toString()
-    {
-        return "\nPHPCtags: {$this->message}\n";
-    }
-}
-
-class ReadableRecursiveDirectoryIterator extends RecursiveDirectoryIterator
-{
-    #[\ReturnTypeWillChange]
-    public function getChildren()
-    {
-        try {
-            return new ReadableRecursiveDirectoryIterator($this->getPathname());
-        } catch (UnexpectedValueException $e) {
-            file_put_contents('php://stderr', "\nPHPPCtags: {$e->getMessage()} - {$this->getPathname()}\n");
-            return new RecursiveArrayIterator(array());
         }
     }
 }
