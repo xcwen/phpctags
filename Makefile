@@ -3,7 +3,7 @@ source := README.md \
           composer.json \
           composer.lock \
           bootstrap.php \
-          PHPCtags.class.php
+          PHPCtags.php
 
 .PHONY: all
 all: clean build/phpctags.phar 

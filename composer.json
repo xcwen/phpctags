@@ -8,7 +8,7 @@
         "nikic/php-parser": "^4.15"
     },
     "autoload": {
-        "classmap": ["PHPCtags.class.php"]
+        "classmap": ["PHPCtags.php"]
     },
     "bin": ["bin/phpctags"]
 }

@@ -1,4 +1,5 @@
 <?php
+namespace app;
 
 use PhpParser\ParserFactory;
 
@@ -169,11 +170,11 @@ class PHPCtags
     private function func_get_return_type($node, $scope)
     {
 
-        if ($node->returnType instanceof PhpParser\Node\NullableType) {
+        if ($node->returnType instanceof \PhpParser\Node\NullableType) {
             $return_type="". $node->returnType->type ;
-        } elseif ($node->returnType instanceof PhpParser\Node\UnionType) {
+        } elseif ($node->returnType instanceof \PhpParser\Node\UnionType) {
             $return_type="". $node->returnType->types[0] ;
-        } elseif ($node->returnType instanceof PhpParser\Node) {
+        } elseif ($node->returnType instanceof \PhpParser\Node) {
             $return_type="". $node->returnType->getType() ;
         } else {
             $return_type="". $node->returnType;
@@ -299,7 +300,7 @@ class PHPCtags
                 $tmp_arr=preg_split('/\\\\/', $use_name);
                 $this->mUseConfig[ $tmp_arr[count($tmp_arr)-1] ]= $use_name ;
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
+        } elseif ($node instanceof \PhpParser\Node\Stmt\TraitUse) {
             foreach ($node ->traits as $trait) {
                 $type= implode("\\", $trait->parts) ;
 

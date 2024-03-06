@@ -16,7 +16,7 @@ if (file_exists($autoload = __DIR__ . '/vendor/autoload.php')) {
 require_once(__DIR__ . "/" ."./deal_config.php");
 
 
-$version = PHPCtags::VERSION;
+$version = \app\PHPCtags::VERSION;
 
 $copyright = <<<'EOF'
 Exuberant Ctags compatiable PHP enhancement, Copyright (C) 2012 Techlive Zheng
@@ -263,7 +263,7 @@ try {
 
         exit;
     } else {
-        $ctags = new PHPCtags($options);
+        $ctags = new \app\PHPCtags($options);
         $ctags->addFiles($argv);
         $result = $ctags->export();
     }

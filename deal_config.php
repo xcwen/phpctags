@@ -159,7 +159,7 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
     $file_list=[];
 
 
-    $ctags = new PHPCtags([]);
+    $ctags = new \app\PHPCtags([]);
     $i=0;
 
     $class_map= [];
