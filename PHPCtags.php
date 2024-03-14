@@ -1,6 +1,7 @@
 <?php
 namespace app;
 
+use PHPParser;
 use PhpParser\ParserFactory;
 
 class PHPCtags
@@ -288,7 +289,7 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\UseUse) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\UseUse) {
             $use_name=$node->name->toString();
             if ($use_name[0] != "\\") {
                 $use_name="\\".$use_name;
@@ -318,17 +319,17 @@ class PHPCtags
                     'type' => $return_type,
                 );
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Use_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Use_) {
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Class_
-                  or  $node instanceof PHPParser\Node\Stmt\Trait_
-                  or $node instanceof PHPParser\Node\Stmt\Enum_
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Class_
+                  or  $node instanceof \PHPParser\Node\Stmt\Trait_
+                  or $node instanceof \PHPParser\Node\Stmt\Enum_
         ) {
             $kind = 'c';
             //$name = $node->name;
-            if ($node instanceof PHPParser\Node\Stmt\Enum_) {
+            if ($node instanceof \PHPParser\Node\Stmt\Enum_) {
                 $inherits[]="enum_";
             }
             $name = $node->name->name;
@@ -449,7 +450,7 @@ class PHPCtags
                 }
                 $this->struct($subNode, false, array('class' => $name));
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Property) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Property) {
             $kind = 'p';
 
             $prop = $node->props[0];
@@ -459,7 +460,7 @@ class PHPCtags
                 if (method_exists($node->type, '__toString')) {
                     $return_type="". $node->type;
                 }
-                if ($node->type instanceof PHPParser\Node\Name\FullyQualified) {
+                if ($node->type instanceof \PHPParser\Node\Name\FullyQualified) {
                     $return_type= "\\".$return_type;
                 }
             }
@@ -474,7 +475,7 @@ class PHPCtags
             }
 
             $access = $this->getNodeAccess($node);
-        } elseif ($node instanceof PHPParser\Node\Stmt\ClassConst
+        } elseif ($node instanceof \PHPParser\Node\Stmt\ClassConst
         ) {
             $kind = 'd';
             $cons = $node->consts[0];
@@ -486,7 +487,7 @@ class PHPCtags
                 $return_type=$this->getRealClassName($matches[1], $scope);
             }
             $args="class";
-        } elseif ($node instanceof PHPParser\Node\Stmt\EnumCase) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\EnumCase) {
             $kind = 'p';
             $name = $node->name->name;
             $line = $node->getLine();
@@ -494,7 +495,7 @@ class PHPCtags
             $static = 1;
             $return_type= $this-> getRealClassName('static', $scope);
             $args="enum";
-        } elseif ($node instanceof PHPParser\Node\Stmt\ClassMethod) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\ClassMethod) {
             $kind = 'm';
             $name = $node->name->name;
             $line = $node->getLine();
@@ -553,15 +554,15 @@ class PHPCtags
             $this->struct($subNode, FALSE, array('method' => $name));
             }
             */
-        } elseif ($node instanceof PHPParser\Node\Stmt\If_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\If_) {
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser\Node\Expr\LogicalOr) {
+        } elseif ($node instanceof \PHPParser\Node\Expr\LogicalOr) {
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Const_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Const_) {
             $kind = 'd';
             $access = "public";
             $cons = $node->consts[0];
@@ -574,18 +575,18 @@ class PHPCtags
             }
 
             $args="namespace";
-        } elseif ($node instanceof PHPParser\Node\Stmt\Global_) {
-        } elseif ($node instanceof PHPParser\Node\Stmt\Static_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Global_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Static_) {
             //@todo
-        } elseif ($node instanceof PHPParser\Node\Stmt\Declare_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Declare_) {
             //@todo
-        } elseif ($node instanceof PHPParser\Node\Stmt\TryCatch) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\TryCatch) {
             /*
             foreach ($node as $subNode) {
             $this->struct($subNode);
             }
             */
-        } elseif ($node instanceof PHPParser\Node\Stmt\Function_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Function_) {
             $kind = 'f';
             //$name = $node->name;
             $name = $node->name->name;
@@ -594,7 +595,7 @@ class PHPCtags
             $return_type = $this->func_get_return_type($node, $scope);
 
             $args=$this->get_args($node);
-        } elseif ($node instanceof PHPParser\Node\Stmt\Interface_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Interface_) {
             $kind = 'i';
             //$name = $node->name;
             $name = $node->name->name;
@@ -604,7 +605,7 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode, false, array('interface' => $name));
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Trait_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Trait_) {
             $kind = 't';
             //$name = $node->name;
             $name = $node->name->name;
@@ -612,7 +613,7 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode, false, array('trait' => $name));
             }
-        } elseif ($node instanceof PHPParser\Node\Stmt\Namespace_) {
+        } elseif ($node instanceof \PHPParser\Node\Stmt\Namespace_) {
             /*
             $kind = 'n';
             $line = $node->getLine();
@@ -621,7 +622,7 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode, false, array('namespace' => $name));
             }
-        } elseif ($node instanceof PHPParser\Node\Expr\Assign_) {
+        } elseif ($node instanceof \PHPParser\Node\Expr\Assign_) {
             if (isset($node->var->name) && is_string($node->var->name)) {
                 $kind = 'v';
                 $node = $node->var;
@@ -634,7 +635,7 @@ class PHPCtags
                     $return_type=$this->getRealClassName($matches[1], $scope);
                 }
             }
-        } elseif ($node instanceof PHPParser\Node\Expr\AssignRef) {
+        } elseif ($node instanceof \PHPParser\Node\Expr\AssignRef) {
             if (isset($node->var->name) && is_string($node->var->name)) {
                 $kind = 'v';
                 $node = $node->var;
@@ -646,7 +647,7 @@ class PHPCtags
                     $return_type=$this->getRealClassName($matches[1], $scope);
                 }
             }
-        } elseif ($node instanceof PHPParser\Node\Expr\FuncCall) {
+        } elseif ($node instanceof \PHPParser\Node\Expr\FuncCall) {
             $name = @$node->name->name;
             switch ($name) {
                 case 'define':
