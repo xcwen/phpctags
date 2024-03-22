@@ -167,20 +167,26 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
     $class_inherit_map= [];
 
 
+    $cache_file_count=0;
 
     if (!$test_flag) {
         if ($cache_flag) {
             $common_json_file=__DIR__. "/common.json";
+            // } else {
+            //     $common_json_file=  $cache_file_name;
+            // }
+            $json_data= json_decode(file_get_contents($common_json_file), true);
+            $class_map= $json_data[0];//类信息
+            $function_list= $json_data[1];//函数,常量
+            $class_inherit_map= $json_data[2];//继承
+            $file_list= $json_data[3];//原先的文件列表
         } else {
-            $common_json_file=  $cache_file_name;
+            $config_data= json_decode(file_get_contents($cache_file_name), true);
+            if (isset($config_data["vendor_file_count"])) {
+                $cache_file_count=$config_data["vendor_file_count"];
+            }
         }
-        $json_data= json_decode(file_get_contents($common_json_file), true);
-        $class_map= $json_data[0];//类信息
-        $function_list= $json_data[1];//函数,常量
-        $class_inherit_map= $json_data[2];//继承
-        $file_list= $json_data[3];//原先的文件列表
     }
-    $cache_file_count=count($file_list);
     /**  @var Ruleset  $ignore_ruleset */
 
     foreach ($php_path_list as $dir) {
@@ -229,7 +235,7 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
     $file_list=$ret_file_list;
 
 
-    $deal_all_count=count($file_list)-$cache_file_count;
+    $deal_all_count=count($file_list);
 
 
     if ($cache_flag) {
@@ -252,12 +258,30 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
     $result=null;
     for ($i= 0; $i< $deal_all_count; $i++) {
         $file_index=$cache_file_count+$i ;
-        $src_file= $file_list[$file_index ];
+        $src_file= $file_list[$i];
         $tag_key= $src_file;
 
-        $need_deal_flag= $rebuild_all_flag || @$tags_map[$tag_key]["gen_time"] < filemtime($src_file);
+        $md5="";
+        $need_deal_flag= false;
+        if ($rebuild_all_flag) {
+            $need_deal_flag= true;
+        } else {
+            if (@$tags_map[$tag_key]["gen_time"] < filemtime($src_file)) {
+                $md5= md5_file($src_file);
+                if (@$tags_map[$tag_key]["md5"] != $md5) {
+                    $need_deal_flag=true;
+                } else {
+                    $tags_map[$tag_key]["gen_time"]=time();
+                }
+            }
+        }
+
         unset($result);
         if ($need_deal_flag) {
+            if (!$md5) {
+                // echo "src :$src_file\n";
+                $md5= md5_file($src_file);
+            }
             $pecent =($i/$deal_all_count)*$max_percent;
             if ($pecent != $last_pecent) {
                 printf("%02d%% %s\n", $start_pecent+$pecent, $src_file);
@@ -272,6 +296,7 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
                     $tags_map[$tag_key] =[
                         "find_time" => $find_time ,
                         "gen_time" => time(),
+                        "md5" => $md5,
                         "result" =>$result,
                     ];
                 }
@@ -304,20 +329,26 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         file_put_contents($tags_file, json_encode($tags_map, JSON_PRETTY_PRINT));
     }
 
-    if ($test_flag || $cache_flag) {
-        $json_flag= JSON_PRETTY_PRINT ;
+    $json_flag= JSON_PRETTY_PRINT ;
+    if ($test_flag) {
         //$json_flag= null;
-        if ($cache_flag) {
-            $out_file_name=$cache_file_name;
-        } else {
-            $out_file_name= "$obj_dir/tags.json";
-        }
+        // if ($cache_flag) {
+        //     $out_file_name=$cache_file_name;
+        // } else {
+        // }
+        $out_file_name= "$obj_dir/tags.json";
 
         file_put_contents($out_file_name, json_encode([
             $class_map, $function_list, $class_inherit_map  , $file_list
         ], $json_flag));
     }
-    if (!$cache_flag) {
+    if ($cache_flag) {
+        save_as_el("$obj_dir/tags-vendor.el", $class_map, $function_list, $class_inherit_map, $file_list);
+        file_put_contents($cache_file_name, json_encode([
+            "gen_time" => time(),
+            "vendor_file_count" => count($file_list) ,
+        ], $json_flag));
+    } else {
         save_as_el("$obj_dir/tags.el", $class_map, $function_list, $class_inherit_map, $file_list);
     }
 }
@@ -362,7 +393,7 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
     //echo "realpath_flag :$realpath_flag \n";
 
 
-    $cache_file_name= "$obj_dir/tags-cache-v2.json" ;
+    $cache_file_name= "$obj_dir/tags-cache-v3.json" ;
 
     $start_pecent=0;
     $max_percent=100;
