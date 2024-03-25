@@ -667,6 +667,19 @@ class PHPCtags
                         $args="namespace";
 
                         break;
+                    case 'class_alias':
+                        $kind = 'c';
+                        $access = "public";
+                        $line = $node->getLine();
+                        $sub_node = $node->args[1]->value;
+                        $name = strval($sub_node->class);
+                        $sub_node_2 = $node->args[0]->value;
+                        $name2 = strval($sub_node_2->class);
+                        
+
+                        $inherits[]= $name2;
+                        // echo " check $name =>$name2 \n";
+                        break;
                 }
             }
         } else {
