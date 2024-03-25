@@ -289,6 +289,7 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
+
         } elseif ($node instanceof \PHPParser\Node\Stmt\UseUse) {
             $use_name=$node->name->toString();
             if ($use_name[0] != "\\") {
@@ -619,8 +620,13 @@ class PHPCtags
             $line = $node->getLine();
             */
             $name = $node->name;
+
             foreach ($node as $subNode) {
-                $this->struct($subNode, false, array('namespace' => $name));
+                if ($name) {
+                    $this->struct($subNode, false, array('namespace' => $name));
+                }else{
+                    $this->struct($subNode  );
+                }
             }
         } elseif ($node instanceof \PHPParser\Node\Expr\Assign_) {
             if (isset($node->var->name) && is_string($node->var->name)) {

@@ -8,16 +8,6 @@ php ./bootstrap.php --config-file=/home/jim/phpstorm-stubs/.ac-php-conf.json --t
 */
 # 2: 运行本文件  ./gen_common_json.php
 
-# 3: 在空项目中生成 tags.el
-/*
-mkdir /home/jim/test && cp ./.ac-php-conf.json  /home/jim/test/.ac-php-conf.json
-
-php ./bootstrap.php --config-file=/home/jim/test/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes
-*/
-# 4 : 复制
-/*
-cp /home/jim/.ac-php/tags-home-jim-test/tags-vendor.el  ~/ac-php/ac-php-comm-tags-data.el
-*/
 
 $json_data= json_decode(file_get_contents("/home/jim/.ac-php/tags-home-jim-phpstorm-stubs/tags.json"), true);
 $json_data[3]=[] ;

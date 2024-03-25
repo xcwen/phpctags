@@ -30,6 +30,7 @@ $options = getopt('aC:f:Nno:RuV', array(
     'excmd::',
     'fields::',
     'tags_dir::',
+    'save-common-el::',
     'kinds::',
     'format::',
     'help',
@@ -112,6 +113,16 @@ while ($key = array_pop($argv_)) {
 if (isset($options['V'])) {
     $options['verbose'] = 'yes';
 }
+
+if (isset($options['save-common-el'])) {
+    $common_json_file=__DIR__. "/common.json";
+
+    $json_data= json_decode(file_get_contents($common_json_file), true);
+    save_as_el($options['save-common-el'], $json_data[0], $json_data[1], $json_data[2], $json_data[3]);
+
+    exit;
+}
+
 
 
 
