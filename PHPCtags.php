@@ -647,22 +647,27 @@ class PHPCtags
                     $return_type=$this->getRealClassName($matches[1], $scope);
                 }
             }
-        } elseif ($node instanceof \PHPParser\Node\Expr\FuncCall) {
-            $name = @$node->name->name;
-            switch ($name) {
-                case 'define':
-                    $kind = 'd';
-                    $access = "public";
-                    $node = $node->args[0]->value;
-                    $name = $node->value;
-                    $line = $node->getLine();
-                    $return_type="void";
-                    if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment(), $matches)) {
-                        $return_type=$this->getRealClassName($matches[1], $scope);
-                    }
-                    $args="namespace";
+        } elseif ($node instanceof \PhpParser\Node\Stmt\Expression) {
+            $node= $node->expr;
+            // print_r($node);
+            if ($node instanceof \PhpParser\Node\Expr\FuncCall) {
+                $name = @$node->name;
+                // echo "call   $name \n";
+                switch ($name) {
+                    case 'define':
+                        $kind = 'd';
+                        $access = "public";
+                        $node = $node->args[0]->value;
+                        $name = $node->value;
+                        $line = $node->getLine();
+                        $return_type="void";
+                        if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment(), $matches)) {
+                            $return_type=$this->getRealClassName($matches[1], $scope);
+                        }
+                        $args="namespace";
 
-                    break;
+                        break;
+                }
             }
         } else {
             // we don't care the rest of them.
@@ -700,6 +705,7 @@ class PHPCtags
         if (!empty($parent)) {
             array_pop($scope);
         }
+        // print_r($structs);
 
         return $structs;
     }
