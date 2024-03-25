@@ -2,19 +2,24 @@
 <?php
 
 # 生成  ~/ac-php/ac-php-comm-tags-data.el 文件步骤:
-#  cp   phpstorm-stubs/* ~/ac-php/commom_php
 # 1:
 /*
-php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
+php ./bootstrap.php --config-file=/home/jim/phpstorm-stubs/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
 */
 # 2: 运行本文件  ./gen_common_json.php
 
-# 3 : 复制
+# 3: 在空项目中生成 tags.el
 /*
-cp /home/jim/.ac-php/tags-home-jim-ac-php-commom_php/tags.el  ~/ac-php/ac-php-comm-tags-data.el
+mkdir /home/jim/test && cp ./.ac-php-conf.json  /home/jim/test/.ac-php-conf.json
+
+php ./bootstrap.php --config-file=/home/jim/test/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes
+*/
+# 4 : 复制
+/*
+cp /home/jim/.ac-php/tags-home-jim-test/tags-vendor.el  ~/ac-php/ac-php-comm-tags-data.el
 */
 
-$json_data= json_decode(file_get_contents("/home/jim/.ac-php/tags-home-jim-ac-php-commom_php/tags.json"), true);
+$json_data= json_decode(file_get_contents("/home/jim/.ac-php/tags-home-jim-phpstorm-stubs/tags.json"), true);
 $json_data[3]=[] ;
 //class
 foreach ($json_data[0] as &$item_list) {
@@ -28,7 +33,7 @@ unset($item_list);
 
 //function
 foreach ($json_data[1] as &$item) {
-    $item[3]="sys";
+        $item[3]="sys";
 }
 
 unset($item);
@@ -47,5 +52,5 @@ foreach ($sys_def_fun as $s_item) {
 }
 
 
-#file_put_contents("./common.json", json_encode($json_data));
+file_put_contents("./common.json", json_encode($json_data));
 #file_put_contents("/home/jim/ac-php/ac-php-comm-tags-data.json" ,json_encode($json_data  ));
