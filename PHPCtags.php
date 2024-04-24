@@ -289,7 +289,6 @@ class PHPCtags
             foreach ($node as $subNode) {
                 $this->struct($subNode);
             }
-
         } elseif ($node instanceof \PHPParser\Node\Stmt\UseUse) {
             $use_name=$node->name->toString();
             if ($use_name[0] != "\\") {
@@ -535,7 +534,7 @@ class PHPCtags
 
                     $field_return_type="mixed";
                     if ($param->type) {
-                        $field_return_type= $this->getRealClassName($param->type->getType(), $filed_scope);
+                        $field_return_type= $this->getRealClassName($param->type->toCodeString(), $filed_scope);
                     }
                     $structs[] = array(
                         //'file' => $this->mFile,
@@ -591,6 +590,11 @@ class PHPCtags
             $kind = 'f';
             //$name = $node->name;
             $name = $node->name->name;
+
+            // PS_UNRESERVE_PREFIX_
+            if (!isset($scope["namespace"]) && substr($name, 0, 20) =="PS_UNRESERVE_PREFIX_") {
+                $name=substr($name, 20);
+            }
             $line = $node->getLine();
 
             $return_type = $this->func_get_return_type($node, $scope);
@@ -624,8 +628,8 @@ class PHPCtags
             foreach ($node as $subNode) {
                 if ($name) {
                     $this->struct($subNode, false, array('namespace' => $name));
-                }else{
-                    $this->struct($subNode  );
+                } else {
+                    $this->struct($subNode);
                 }
             }
         } elseif ($node instanceof \PHPParser\Node\Expr\Assign_) {
@@ -681,7 +685,7 @@ class PHPCtags
                         $name = strval($sub_node->class);
                         $sub_node_2 = $node->args[0]->value;
                         $name2 = strval($sub_node_2->class);
-                        
+
 
                         $inherits[]= $name2;
                         // echo " check $name =>$name2 \n";
