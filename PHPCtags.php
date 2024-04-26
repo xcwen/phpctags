@@ -534,7 +534,8 @@ class PHPCtags
 
                     $field_return_type="mixed";
                     if ($param->type) {
-                        $field_return_type= $this->getRealClassName($param->type->toCodeString(), $filed_scope);
+                        $cls = method_exists($param->type, 'toCodeString') ? $param->type->toCodeString() : $param->type->getType();
+                        $field_return_type= $this->getRealClassName($cls, $filed_scope);
                     }
                     $structs[] = array(
                         //'file' => $this->mFile,
