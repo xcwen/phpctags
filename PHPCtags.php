@@ -42,7 +42,8 @@ class PHPCtags
 
     public function __construct($options)
     {
-        $this->mParser =  (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        // $this->mParser =  (new ParserFactory)->create(ParserFactory::PREFER_PHP7);
+        $this->mParser =  (new ParserFactory)->createForNewestSupportedVersion();
         $this->mOptions = $options;
         $this->filecount = 0;
     }
@@ -303,7 +304,7 @@ class PHPCtags
             }
         } elseif ($node instanceof \PhpParser\Node\Stmt\TraitUse) {
             foreach ($node ->traits as $trait) {
-                $type= implode("\\", $trait->parts) ;
+                $type= implode("\\", $trait->getParts()) ;
 
                 $name = str_replace("\\", "_", $type) ;
                 $line = $node->getLine();
@@ -343,7 +344,7 @@ class PHPCtags
 
             $doc_item= $node->getDocComment() ;
             if ($doc_item) {
-                $doc_start_line=$doc_item->getLine();
+                $doc_start_line=$doc_item->getStartLine();
                 $arr=explode("\n", ($doc_item->__toString()));
                 foreach ($arr as $line_num => $line_str) {
                     if (preg_match(
@@ -438,7 +439,7 @@ class PHPCtags
                                         // 'file' => $this->mFile,
                                         'kind' => "p",
                                         'name' => $field_name,
-                                        'line' => $comment->getLine() ,
+                                        'line' => $comment->getStartLine() ,
                                         'scope' => $this->get_scope($filed_scope) ,
                                         'access' => "public",
                                         'type' => $field_return_type,
