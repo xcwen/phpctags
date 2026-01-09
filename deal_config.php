@@ -422,6 +422,7 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
 }
 function save_as_el($file_name, $class_map, $function_list, $class_inherit_map, $file_list)
 {
+
     $fp=fopen($file_name, "w");
     $str= "(setq  g-ac-php-tmp-tags  [\n(\n" ;
     //class_map

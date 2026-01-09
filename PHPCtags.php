@@ -10,7 +10,6 @@ class PHPCtags
 
     private $mFile;
 
-    public \TTs\Test $test;
 
     private $mFiles;
     private $mFileLines ;
@@ -472,6 +471,8 @@ class PHPCtags
                 if (preg_match("/@var[ \t]+([a-zA-Z0-9_\\\\|]+)/", $node->getDocComment()??"", $matches)) {
                     $return_type=$this->getRealClassName($matches[1], $scope);
                 }
+            }else{
+                $return_type=$this->getRealClassName($return_type, $scope);
             }
 
             $access = $this->getNodeAccess($node);

@@ -2,7 +2,7 @@
 #php ./bootstrap.php --config-file=/home/jim/ac-php/commom_php/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=yes
 #php ./bootstrap.php --config-file=/home/jim/phpctags/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=no
 
-php ./bootstrap.php --config-file=/home/jim/ac-php/phptest/.ac-php-conf.json --tags_dir=/home/jim/.cache/ac-php  --rebuild=yes   --realpath_flag=yes
+php ./bootstrap.php --config-file=$HOME/ac-php/phptest/.ac-php-conf.json --tags_dir=$HOME/.cache/ac-php  --rebuild=yes   --realpath_flag=yes
 #php ./bootstrap.php --save-common-el=/home/jim/b.el
 
 #php ./bootstrap.php --config-file=/home/jim/test/.ac-php-conf.json --tags_dir=/home/jim/.ac-php  --rebuild=yes   --realpath_flag=yes --test=no
