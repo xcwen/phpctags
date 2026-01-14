@@ -460,6 +460,10 @@ class PHPCtags
                 if (method_exists($node->type, '__toString')) {
                     $return_type="". $node->type;
                 }
+                if ($node->type->name) {
+                    $return_type="". $node->type->name;
+                }
+
                 if ($node->type instanceof \PHPParser\Node\Name\FullyQualified) {
                     $return_type= "\\".$return_type;
                 }
