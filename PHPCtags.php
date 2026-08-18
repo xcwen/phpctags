@@ -183,8 +183,11 @@ class PHPCtags
 
 
         if (!$return_type) {
-            if (preg_match("/@return[ \t]+([\$a-zA-Z0-9_\\\\]+)/", $node->getDocComment()??"", $matches)) {
+            if (preg_match("/@return[ \t]+([\$a-zA-Z0-9_\\\\]+)([ \t]?\\|[ \t]?([\$a-zA-Z0-9_\\\\]+))?/", $node->getDocComment()??"", $matches)) {
                 $return_type= $matches[1];
+                if ($return_type=="null" && $matches[3]) {
+                    $return_type=$matches[3];
+                }
             }
         }
         if ($return_type) {
