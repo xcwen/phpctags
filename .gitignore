@@ -2,3 +2,4 @@
 phpctags
 build/
 vendor/
+.DS_Store
