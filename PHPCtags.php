@@ -748,11 +748,13 @@ class PHPCtags
 
 
 
-    public function process_single_file($filename)
+    public function process_single_file($filename, $source = null)
     {
         $this->setMFile((string) $filename);
-        $file = file_get_contents($this->mFile);
-        return $this->struct($this->mParser->parse($file), true);
+        if ($source === null) {
+            $source = file_get_contents($this->mFile);
+        }
+        return $this->struct($this->mParser->parse($source), true);
     }
     public function get_inherits($extends, $implements, $scope)
     {

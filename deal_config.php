@@ -1,6 +1,137 @@
 <?php
 require_once(__DIR__. "/GitIgnore/Ruleset.php");
 
+function write_all_to_stream($stream, $contents)
+{
+    $length = strlen($contents);
+    $offset = 0;
+    while ($offset < $length) {
+        $written = fwrite($stream, substr($contents, $offset));
+        if ($written === false || $written === 0) {
+            throw new RuntimeException("Unable to write generated tags data");
+        }
+        $offset += $written;
+    }
+}
+
+function files_have_same_content($first_file, $second_file)
+{
+    if (!is_file($first_file) || filesize($first_file) !== filesize($second_file)) {
+        return false;
+    }
+
+    $first_hash = hash_file('sha256', $first_file);
+    $second_hash = hash_file('sha256', $second_file);
+    return is_string($first_hash)
+        && is_string($second_hash)
+        && hash_equals($first_hash, $second_hash);
+}
+
+function atomic_write_stream_if_changed($file_name, callable $writer)
+{
+    $publication_file = $file_name;
+    if (is_link($file_name)) {
+        $publication_file = realpath($file_name);
+        if ($publication_file === false) {
+            throw new RuntimeException("Unable to resolve symbolic link {$file_name}");
+        }
+    }
+
+    $directory = dirname($publication_file);
+    $temporary_file = tempnam($directory, '.' . basename($publication_file) . '.tmp.');
+    if ($temporary_file === false) {
+        throw new RuntimeException("Unable to create a temporary file for {$file_name}");
+    }
+
+    $stream = null;
+    try {
+        $stream = fopen($temporary_file, 'wb');
+        if ($stream === false) {
+            throw new RuntimeException("Unable to open temporary file for {$file_name}");
+        }
+
+        $writer($stream);
+        if (!fflush($stream)) {
+            throw new RuntimeException("Unable to flush temporary file for {$file_name}");
+        }
+        if (function_exists('fsync') && !fsync($stream)) {
+            throw new RuntimeException("Unable to sync temporary file for {$file_name}");
+        }
+        fclose($stream);
+        $stream = null;
+
+        clearstatcache(true, $publication_file);
+        clearstatcache(true, $temporary_file);
+        if (files_have_same_content($publication_file, $temporary_file)) {
+            unlink($temporary_file);
+            return false;
+        }
+
+        $existing_mode = @fileperms($publication_file);
+        if ($existing_mode !== false) {
+            chmod($temporary_file, $existing_mode & 0777);
+        } else {
+            $mask = umask();
+            umask($mask);
+            chmod($temporary_file, 0666 & ~$mask);
+        }
+
+        if (!rename($temporary_file, $publication_file)) {
+            throw new RuntimeException("Unable to publish generated file {$file_name}");
+        }
+        return true;
+    } catch (Throwable $error) {
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+        if (file_exists($temporary_file)) {
+            unlink($temporary_file);
+        }
+        throw $error;
+    }
+}
+
+function atomic_write_file_if_changed($file_name, $contents)
+{
+    return atomic_write_stream_if_changed($file_name, function ($stream) use ($contents) {
+        write_all_to_stream($stream, $contents);
+    });
+}
+
+function encode_json($data, $flags = 0)
+{
+    $contents = json_encode($data, $flags);
+    if ($contents === false) {
+        throw new RuntimeException('Unable to encode generated tags data as JSON: ' . json_last_error_msg());
+    }
+    return $contents;
+}
+
+function read_source_snapshot($file_name)
+{
+    $source = file_get_contents($file_name);
+    if ($source === false) {
+        throw new RuntimeException("Unable to read source file {$file_name}");
+    }
+    return array($source, md5($source));
+}
+
+function source_file_signature($file_name)
+{
+    clearstatcache(true, $file_name);
+    $stat = @stat($file_name);
+    if ($stat === false) {
+        throw new RuntimeException("Unable to stat source file {$file_name}");
+    }
+    return array(
+        'mtime' => (int) $stat['mtime'],
+        'ctime' => (int) $stat['ctime'],
+        'size' => (int) $stat['size'],
+        'ino' => isset($stat['ino']) ? (int) $stat['ino'] : 0,
+        'dev' => isset($stat['dev']) ? (int) $stat['dev'] : 0,
+    );
+}
+
 function get_config($config_file)
 {
 
@@ -250,8 +381,12 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
 
 
     $tags_map = json_decode($tags_data, true);
+    if (!is_array($tags_map)) {
+        $tags_map = array();
+    }
     $find_time=time();
-    $last_pecent=-1;
+    $last_percent=-1;
+    $seen_tag_keys=array();
     $construct_map=[];
     $class_define_map=[];
 
@@ -260,54 +395,58 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         $file_index=$cache_file_count+$i ;
         $src_file= $file_list[$i];
         $tag_key= $src_file;
+        $seen_tag_keys[$tag_key]=true;
 
         $md5="";
-        $need_deal_flag= false;
-        if ($rebuild_all_flag) {
-            $need_deal_flag= true;
-        } else {
-            if (@$tags_map[$tag_key]["gen_time"] < filemtime($src_file)) {
-                $md5= md5_file($src_file);
-                if (@$tags_map[$tag_key]["md5"] != $md5) {
-                    $need_deal_flag=true;
-                } else {
-                    $tags_map[$tag_key]["gen_time"]=time();
-                }
-            }
-        }
+        $source=null;
+        $source_signature=null;
+        $source_mtime=null;
+        $cached_item=isset($tags_map[$tag_key]) && is_array($tags_map[$tag_key]);
+        $need_deal_flag=$rebuild_all_flag || !$cached_item;
 
         unset($result);
-        if ($need_deal_flag) {
-            if (!$md5) {
-                // echo "src :$src_file\n";
-                $md5= md5_file($src_file);
+        try {
+            $source_signature=source_file_signature($src_file);
+            $source_mtime=$source_signature['mtime'];
+            $cached_signature=$cached_item && isset($tags_map[$tag_key]['source_signature'])
+                ? $tags_map[$tag_key]['source_signature'] : null;
+            list($source, $md5)=read_source_snapshot($src_file);
+            if (!$need_deal_flag) {
+                $cached_md5=isset($tags_map[$tag_key]["md5"])
+                    ? $tags_map[$tag_key]["md5"] : "";
+                if ($cached_md5 !== $md5) {
+                    $need_deal_flag=true;
+                } elseif ($cached_signature !== $source_signature) {
+                    $tags_map[$tag_key]["gen_time"]=$source_mtime;
+                    $tags_map[$tag_key]['source_signature']=$source_signature;
+                }
             }
-            $pecent =($i/$deal_all_count)*$max_percent;
-            if ($pecent != $last_pecent) {
-                printf("%02d%% %s\n", $start_pecent+$pecent, $src_file);
-                $last_pecent = $pecent;
-            }
-            $ctags->cleanFiles();
 
-
-            try {
-                $result = $ctags->process_single_file($src_file);
+            if ($need_deal_flag) {
+                $percent=$start_pecent + (int) floor(($i * $max_percent) / max(1, $deal_all_count));
+                if ($percent !== $last_percent) {
+                    printf("%02d%% %s\n", $percent, $src_file);
+                    $last_percent=$percent;
+                }
+                $ctags->cleanFiles();
+                $result = $ctags->process_single_file($src_file, $source);
                 if ($result !== false) {
                     $tags_map[$tag_key] =[
                         "find_time" => $find_time ,
-                        "gen_time" => time(),
+                        "gen_time" => $source_mtime,
+                        "source_signature" => $source_signature,
                         "md5" => $md5,
                         "result" =>$result,
                     ];
                 }
-            } catch (\Exception $e) {
-                echo "PHPParser: {$e->getMessage()} - {$src_file}".PHP_EOL;
-                $tags_map[$tag_key]["find_time"] = $find_time;
-                $result= &$tags_map[$tag_key]["result"] ;
+            } else {
+                $result=isset($tags_map[$tag_key]["result"])
+                    ? $tags_map[$tag_key]["result"] : null;
             }
-        } else {
-            $tags_map[$tag_key]["find_time"] = $find_time;
-            $result= &$tags_map[$tag_key]["result"] ;
+        } catch (\Exception $e) {
+            echo "PHPParser: {$e->getMessage()} - {$src_file}".PHP_EOL;
+            $result=$cached_item && isset($tags_map[$tag_key]["result"])
+                ? $tags_map[$tag_key]["result"] : null;
         }
 
         if ($result) {
@@ -317,16 +456,16 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
 
     construct_map_to_function_list($class_map, $construct_map, $class_inherit_map, $function_list, $class_define_map);
 
-    //clean old file-data
-    foreach ($tags_map as $key => &$item) {
-        if ($item["find_time"] != $find_time) {
+    // Clean data for files that are no longer part of the project.
+    foreach (array_keys($tags_map) as $key) {
+        if (!isset($seen_tag_keys[$key])) {
             unset($tags_map[$key]);
         }
     }
 
 
     if (! $cache_flag) {
-        file_put_contents($tags_file, json_encode($tags_map, JSON_PRETTY_PRINT));
+        atomic_write_file_if_changed($tags_file, encode_json($tags_map, JSON_PRETTY_PRINT));
     }
 
     $json_flag= JSON_PRETTY_PRINT ;
@@ -338,13 +477,13 @@ function deal_file_tags($cache_flag, $cache_file_name, $test_flag, $rebuild_all_
         // }
         $out_file_name= "$obj_dir/tags.json";
 
-        file_put_contents($out_file_name, json_encode([
+        atomic_write_file_if_changed($out_file_name, encode_json([
             $class_map, $function_list, $class_inherit_map  , $file_list
         ], $json_flag));
     }
     if ($cache_flag) {
         save_as_el("$obj_dir/tags-vendor.el", $class_map, $function_list, $class_inherit_map, $file_list);
-        file_put_contents($cache_file_name, json_encode([
+        atomic_write_file_if_changed($cache_file_name, encode_json([
             "gen_time" => time(),
             "vendor_file_count" => count($file_list) ,
         ], $json_flag));
@@ -422,58 +561,64 @@ function deal_config($config_file, $rebuild_all_flag, $realpath_flag, $need_tags
 }
 function save_as_el($file_name, $class_map, $function_list, $class_inherit_map, $file_list)
 {
+    return atomic_write_stream_if_changed(
+        $file_name,
+        function ($fp) use ($class_map, $function_list, $class_inherit_map, $file_list) {
+            $buffer='';
+            $append=function ($contents) use ($fp, &$buffer) {
+                $buffer.=$contents;
+                if (strlen($buffer) >= 1024 * 1024) {
+                    write_all_to_stream($fp, $buffer);
+                    $buffer='';
+                }
+            };
 
-    $fp=fopen($file_name, "w");
-    $str= "(setq  g-ac-php-tmp-tags  [\n(\n" ;
-    //class_map
-    foreach ($class_map as $class_name => &$c_field_list) {
-        $class_name_str= addslashes($class_name);
-        $str.=  "  (\"". $class_name_str  ."\".[\n"   ;
-        foreach ($c_field_list as &$c_f_item) {
-            //print_r( $c_f_item );
-            $doc=addslashes($c_f_item[2]??"");
-            $return_type_str=addslashes($c_f_item[4]??"");
-            $name= is_string($c_f_item[1]) ? addslashes($c_f_item[1]) : '';
-            $str.="    [\"{$c_f_item[0]}\" \"$name\" \"{$doc}\"  \"{$c_f_item[3]}\"  \"$return_type_str\" \"$class_name_str\" \"{$c_f_item[6]}\" \"{$c_f_item[7]}\" ]\n";
+            $append("(setq  g-ac-php-tmp-tags  [\n(\n");
+
+            foreach ($class_map as $class_name => $c_field_list) {
+                $class_name_str=addslashes($class_name);
+                $append("  (\"" . $class_name_str . "\".[\n");
+                foreach ($c_field_list as $c_f_item) {
+                    $doc=addslashes($c_f_item[2]??"");
+                    $return_type_str=addslashes($c_f_item[4]??"");
+                    $name=is_string($c_f_item[1]) ? addslashes($c_f_item[1]) : '';
+                    $append(
+                        "    [\"{$c_f_item[0]}\" \"$name\" \"{$doc}\"  \"{$c_f_item[3]}\"  \"$return_type_str\" \"$class_name_str\" \"{$c_f_item[6]}\" \"{$c_f_item[7]}\" ]\n"
+                    );
+                }
+                $append("  ])\n");
+            }
+            $append(")\n[\n");
+
+            foreach ($function_list as $f_item) {
+                $doc=addslashes($f_item[2]??"");
+                $function_name_str=addslashes($f_item[1]??"");
+                $return_type_str=addslashes($f_item[4]??"");
+                $append(
+                    "  [\"{$f_item[0]}\" \"$function_name_str\" \"{$doc}\"  \"{$f_item[3]}\"  \"$return_type_str\"  ]\n"
+                );
+            }
+            $append("]\n(\n");
+
+            foreach ($class_inherit_map as $class_name => $i_list) {
+                $class_name_str=addslashes($class_name);
+                $line="  (\"" . $class_name_str . "\". [ ";
+                foreach ($i_list as $i_item) {
+                    $line .= "\"" . addslashes($i_item) . "\" ";
+                }
+                $append($line . "])\n");
+            }
+            $append(")\n[\n");
+
+            foreach ($file_list as $f_file) {
+                $append("  \"" . addslashes($f_file) . "\"\n");
+            }
+            $append("]\n])\n");
+            if ($buffer !== '') {
+                write_all_to_stream($fp, $buffer);
+            }
         }
-        $str.=  "  ])\n"  ;
-    }
-    $str.=  ")\n"  ;
-    fwrite($fp, $str);
-    $str="[\n";
-
-    //[ $kind , $define_name, $doc , $file_pos , $return_type ] ;
-    foreach ($function_list as &$f_item) {
-        $doc=addslashes($f_item[2]??"");
-        $function_name_str=addslashes($f_item[1]??"");
-        $return_type_str=addslashes($f_item[4]??"");
-        $str.="  [\"{$f_item[0]}\" \"$function_name_str\" \"{$doc}\"  \"{$f_item[3]}\"  \"$return_type_str\"  ]\n";
-    }
-    $str.="]\n";
-    fwrite($fp, $str);
-
-    $str="(\n";
-    foreach ($class_inherit_map as $class_name => &$i_list) {
-        $class_name_str= addslashes($class_name);
-        $str.=  "  (\"". $class_name_str  ."\". [ "   ;
-        foreach ($i_list as &$i_item) {
-            $str .= "\"". addslashes($i_item) ."\" " ;
-        }
-        $str.=   "])\n"  ;
-    }
-    $str.=")\n";
-    fwrite($fp, $str);
-
-
-
-    $str="[\n";
-    foreach ($file_list as &$f_file) {
-        $str.="  \"". addslashes($f_file)  ."\"\n" ;
-    }
-    $str.="]\n";
-    fwrite($fp, $str);
-    fwrite($fp, "])\n");
-    fclose($fp);
+    );
 }
 
 
@@ -481,25 +626,36 @@ function construct_map_to_function_list(&$class_map, &$construct_map, &$class_in
 {
     // construct_map => function_list
     $kind="f";
+    $constructor_cache=[];
     foreach (array_keys($class_map) as $class_name) {
-        $cur_map=[];
         $find_item=null;
         $parent_class=$class_name;
-        $tmp_parent_class="";
-        do {
-            $find_item=@$construct_map[$parent_class];
-            if ($find_item) {
+        $path=[];
+        $seen=[];
+        while ($parent_class && !isset($seen[$parent_class])) {
+            if (array_key_exists($parent_class, $constructor_cache)) {
+                $find_item=$constructor_cache[$parent_class];
                 break;
             }
-            $cur_map[$parent_class ]=true;
-            $tmp_parent_class=$parent_class;
-            $parent_class=@$class_inherit_map[$parent_class][0];
-            if ($parent_class) {
-                if ($parent_class[0]!="\\") { //cur namespace
-                    $parent_class=preg_replace("/[A-Za-z0-8_]*\$/", "", $tmp_parent_class). "$parent_class";
-                }
+            if (!empty($construct_map[$parent_class])) {
+                $find_item=$construct_map[$parent_class];
+                $constructor_cache[$parent_class]=$find_item;
+                break;
             }
-        } while ($parent_class && !isset($cur_map[$parent_class]));
+
+            $seen[$parent_class]=true;
+            $path[]=$parent_class;
+            $next_parent=isset($class_inherit_map[$parent_class][0])
+                ? $class_inherit_map[$parent_class][0] : null;
+            if ($next_parent && $next_parent[0]!="\\") {
+                $next_parent=preg_replace("/[A-Za-z0-9_]*\$/", "", $parent_class) . $next_parent;
+            }
+            $parent_class=$next_parent;
+        }
+        foreach ($path as $path_class) {
+            $constructor_cache[$path_class]=$find_item;
+        }
+
         if (!$find_item) { //没有找到,就用类定义
             $find_item= @$class_define_map[$class_name ];
         }

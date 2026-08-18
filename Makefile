@@ -3,7 +3,11 @@ source := README.md \
           composer.json \
           composer.lock \
           bootstrap.php \
-          PHPCtags.php
+          buildPHAR.php \
+          common.json \
+          PHPCtags.php \
+          deal_config.php \
+          $(wildcard GitIgnore/*.php)
 
 .PHONY: all
 all: clean build/phpctags.phar 
