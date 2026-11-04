@@ -173,8 +173,14 @@ class PHPCtags
 
         if ($node->returnType instanceof \PhpParser\Node\NullableType) {
             $return_type="". $node->returnType->type ;
-        } elseif ($node->returnType instanceof \PhpParser\Node\UnionType) {
+        } elseif ($node->returnType instanceof \PhpParser\Node\IntersectionType) {
             $return_type="". $node->returnType->types[0] ;
+        } elseif ($node->returnType instanceof \PhpParser\Node\UnionType) {
+            if ($node->returnType->types[0] instanceof \PhpParser\Node\IntersectionType) {
+                $return_type="". $node->returnType->types[0]->types[0];
+            } else {
+                $return_type="". $node->returnType->types[0] ;
+            }
         } elseif ($node->returnType instanceof \PhpParser\Node) {
             $return_type="". $node->returnType->name;
         } else {
